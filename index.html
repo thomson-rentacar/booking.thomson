@@ -633,6 +633,21 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 .p-type-p{color:#7A4500;font-weight:700}
 .p-total td{font-size:12.5px}
 
+.done-div{list-style:none;display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--muted);font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.done-div::before,.done-div::after{content:"";flex:1;border-top:1px dashed var(--line-2)}
+.task.done .t-card{position:relative;overflow:hidden;background:#F6F7F9!important;border-color:var(--line)!important;box-shadow:none!important}
+.task.done .t-card>*:not(.stamp),.task.done .t-card>*:not(.stamp) *{color:#8A94A3!important;border-color:#C9CFD7!important}
+.task.done .t-card .chip,.task.done .t-card .bk-side{background:#E9ECF0!important}
+.task.done .t-card .plate{opacity:.75;box-shadow:none!important}
+.task.done .t-card svg{filter:grayscale(1);opacity:.55}
+.task.done .t-time{color:#9AA3AF}
+.stamp{position:absolute;top:10px;right:10px;transform:rotate(-12deg);border:3px double currentColor;border-radius:7px;padding:3px 9px;text-align:center;line-height:1.15;opacity:.9;pointer-events:none;z-index:2;background:rgba(255,255,255,.6)}
+.task.done .t-top{min-height:44px;padding-right:118px}
+.stamp b{display:block;font-family:var(--head);font-weight:800;font-size:13.5px;letter-spacing:.08em;white-space:nowrap}
+.stamp i{display:block;font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.03em}
+.stamp.delivery{color:#1F6FD1}
+.stamp.pickup{color:#C47A12}
+.task.done .t-actions{position:relative;z-index:3}
 </style>
 </head>
 <body>
@@ -657,7 +672,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.32-2026';
+const APP_VERSION = '3.33-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -1104,12 +1119,18 @@ function taskState(t) {
   if (ms <= 30 * 60000) return 'soon';
   return 'upcoming';
 }
+/* pending tasks first (by time), then a divider, then finished tasks (by the time they were done) */
+function taskListHtml(list) {
+  const doneAt = t => (t.type === 'delivery' ? t.b.deliveredAt : t.b.pickedUpAt) || t.at;
+  const pend = list.filter(t => !t.done), fin = list.filter(t => t.done).sort((a, c) => doneAt(a).localeCompare(doneAt(c)));
+  return `<ol class="timeline">${pend.map(taskCard).join('')}${fin.length ? `<li class="done-div" aria-hidden="${pend.length ? 'false' : 'true'}"><span>Done (${fin.length})</span></li>${fin.map(taskCard).join('')}` : ''}</ol>`;
+}
 function taskCard(t) {
   const b = t.b, st = taskState(t), mine = isMine(t);
   const ms = parseDT(t.at) - Date.now();
   const doneAt = t.type === 'delivery' ? b.deliveredAt : b.pickedUpAt;
   const actReq = t.type === 'pickup' && st === 'late' ? '<span class="chip late act-req">Action required</span>' : '';
-  const badge = st === 'done' ? `<span class="chip done">Done ${time12(tOf(doneAt))}</span>`
+  const badge = st === 'done' ? ''
     : st === 'late' ? `<span class="chip late">Late by ${durText(ms)}</span>`
     : st === 'soon' ? `<span class="chip soon">Due in ${durText(ms)}</span>` : '';
   const drvName = t.type === 'delivery' ? b.deliveryDriverName : b.pickupDriverName;
@@ -1126,7 +1147,7 @@ function taskCard(t) {
   }
   return `<li class="task ${t.type} ${st}">
     <div class="t-time num">${time12(tOf(t.at)).replace(' ', '<br>')}</div>
-    <div class="t-card">
+    <div class="t-card">${t.done ? `<div class="stamp ${t.type}" aria-label="${t.type === 'delivery' ? 'Delivered' : 'Picked up'} at ${time12(tOf(doneAt))}"><b>${t.type === 'delivery' ? 'DELIVERED' : 'PICKED UP'} ✓</b><i>${time12(tOf(doneAt))}</i></div>` : ''}
       <div class="t-top"><span class="chip ${t.type}">${t.type === 'delivery' ? 'Delivery' : 'Pickup'}</span>${badge}${actReq}${b.extendable && t.type === 'pickup' && !t.done ? '<span class="chip ext">Extendable</span>' : ''}${!t.done && missingInfo(b).length ? `<span class="chip needs" title="${esc(missingInfo(b).join(', '))}">Needs details: ${missingInfo(b).length}</span>` : ''}${b.collectDocs && t.type === 'delivery' && !b.docsCollected ? '<span class="chip docs">📄 Collect documents</span>' : ''}${isStaff() ? subTag(b) : ''}${mine && !t.done ? '<span class="chip mine">Yours</span>' : ''}</div>
       ${b.oldRef ? `<div class="t-agr">${agrTitle(b)} ${bkSide(b)}</div>` : ''}
       <div class="t-car">${CAR}<span>${carLabel(b)}</span></div>
@@ -1254,7 +1275,7 @@ function viewHome() {
     <a class="stat s-r" href="#/agreements"><strong class="num">${onrent}</strong><span>Open agreements</span><em>Cars with clients</em></a>
   </div>`;
   const col = (key, title, list, cls, extra = '') => `<section class="col col-${key}" aria-label="${title}"><header class="col-h ${cls}"><h2>${title}</h2><span class="num col-prog">${list.length ? `${list.filter(t => t.done).length} of ${list.length} done` : '0'}</span></header>
-    ${list.length ? `<ol class="timeline">${list.map(taskCard).join('')}</ol>` : `<p class="col-empty">No ${title.toLowerCase()} ${dayWord}.</p>`}${extra}</section>`;
+    ${list.length ? taskListHtml(list) : `<p class="col-empty">No ${title.toLowerCase()} ${dayWord}.</p>`}${extra}</section>`;
   const html = `
   ${miniCal(false)}
 
@@ -1264,7 +1285,7 @@ function viewHome() {
     <div class="toolbar"><button class="btn sm plate-btn" data-act="findplate">Find plate</button><a class="btn sm" href="#/calendar">Calendar</a><button class="btn sm" data-act="daysheet">Delivery sheet PDF</button>${isStaff() ? '<a class="btn sm primary" href="#/new">New booking</a>' : ''}</div></div>
   <div class="board tab-${tab}">
     ${miniCal(true)}
-    <section class="col col-all" aria-label="All tasks">${D === today ? overdueSection('delivery') + overdueSection('pickup') : ''}${tasks.length ? `<ol class="timeline">${tasks.map(taskCard).join('')}</ol>`
+    <section class="col col-all" aria-label="All tasks">${D === today ? overdueSection('delivery') + overdueSection('pickup') : ''}${tasks.length ? taskListHtml(tasks)
       : `<div class="empty">${CAR.replace('car-ico', 'car-ico big')}<h3>No deliveries or pickups ${dayWord}</h3><p>${isStaff() ? '<a class="btn primary" href="#/new">Create a booking</a>' : `Tasks for ${esc(fmtDate(D))} will appear here.`}</p></div>`}</section>
     ${col('d', 'Deliveries', dl, 'h-d', D === today ? overdueSection('delivery') : '')}
     ${col('p', 'Pickups', pk, 'h-p', D === today ? overdueSection('pickup') : '')}
