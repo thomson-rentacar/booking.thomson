@@ -648,6 +648,13 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 .stamp.delivery{color:#1F6FD1}
 .stamp.pickup{color:#C47A12}
 .task.done .t-actions{position:relative;z-index:3}
+.ch-ed{display:flex;flex-direction:column;gap:6px}
+.ch-row{display:grid;grid-template-columns:minmax(120px,1.1fr) 1.3fr 92px 36px;gap:6px;align-items:center}
+.ch-row select,.ch-row input{min-height:42px;font-size:15px;padding:6px 8px;border:1px solid var(--line-2);border-radius:10px;background:#fff;font-family:inherit;color:var(--ink);width:100%;min-width:0}
+.ch-row .x{width:36px;height:36px;border-radius:10px;border:1px solid var(--line-2);background:#fff;font-size:20px;line-height:1;color:var(--late);cursor:pointer}
+.ch-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ch-rm{min-height:28px!important;padding:0 9px!important;color:var(--late)!important;margin-left:4px}
+@media(max-width:520px){.ch-row{grid-template-columns:1fr 96px 36px}.ch-row input:not([type=number]){grid-column:1/-1;grid-row:2}}
 </style>
 </head>
 <body>
@@ -672,7 +679,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.33-2026';
+const APP_VERSION = '3.34-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -759,7 +766,45 @@ function rentAmount(b, f) {
 const estimate = (b, f) => lineCalc(rentAmount(b, f), f.vatMode);
 const rateText = f => `AED ${money(f.rate)} per ${f.rateType === 'month' ? 'month' : 'day'}`;
 const paidSoFar = f => r2((+(f && f.advance) || 0) + ((f && f.payments) || []).reduce((s, p) => s + (+p.amount || 0), 0));
-const bookingTotal = (b, f) => !f ? 0 : (f.settlement && f.settlement.totals ? f.settlement.totals.total : estimate(b, f).gross);
+/* extra charges: delivery or pickup charge, cleaning, fuel and so on. They follow the booking's VAT; traffic fines carry no VAT */
+const CHARGE_TYPES = [['delivery', 'Delivery charge'], ['pickup', 'Pickup charge'], ['cleaning', 'Cleaning'], ['fuel', 'Fuel'], ['salik', 'Salik'], ['parking', 'Parking'], ['fine', 'Traffic fine'], ['damage', 'Damage'], ['other', 'Other']];
+const chargeType = t => (CHARGE_TYPES.find(x => x[0] === t) || [])[1] || 'Other';
+const chargeName = c => c.type === 'other' ? (c.label || 'Other') : chargeType(c.type) + (c.label ? `: ${c.label}` : '');
+const chargeMode = (c, f) => c.type === 'fine' ? 'none' : ((f && f.vatMode) || 'plus');
+function legacyCharges(pc) {
+  if (!pc) return [];
+  return [['salik', pc.salik], ['parking', pc.parking], ['fine', pc.fines], ['other', pc.otherAmount, pc.otherLabel]].filter(x => +x[1]).map(([type, amount, label]) => ({ type, amount: +amount, label: label || '', stage: 'pickup', legacy: true }));
+}
+const allCharges = f => !f ? [] : [...(f.extras || []), ...((f.pickupCharges && f.pickupCharges.extras) || []), ...legacyCharges(f.pickupCharges)];
+const chargeRows = (f, list) => (list || []).filter(c => +c.amount).map(c => { const m = chargeMode(c, f); return { c, mode: m, label: `${chargeName(c)} (${MODE_LABEL[m]})`, ...lineCalc(c.amount, m) }; });
+const chargesGross = (f, list) => r2(chargeRows(f, list || allCharges(f)).reduce((s, r) => s + r.gross, 0));
+const bookingTotal = (b, f) => !f ? 0 : (f.settlement && f.settlement.totals ? f.settlement.totals.total : r2(estimate(b, f).gross + chargesGross(f)));
+/* charge editor: rows of type, details and amount, with + Add charge */
+function chargeRowHtml(c = {}) {
+  const meta = esc(JSON.stringify({ stage: c.stage || '', at: c.at || '', by: c.by || '' }));
+  return `<div class="ch-row" data-meta="${meta}"><select aria-label="Charge type">${CHARGE_TYPES.map(([k, l]) => `<option value="${k}" ${(c.type || 'delivery') === k ? 'selected' : ''}>${l}${k === 'fine' ? ' (no VAT)' : ''}</option>`).join('')}</select>
+    <input aria-label="Details" value="${esc(c.label || '')}" placeholder="${c.type === 'other' ? 'Name of charge' : 'Details (optional)'}"><input aria-label="Amount AED" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(c.amount ?? '')}" placeholder="AED"><button type="button" class="x" aria-label="Remove charge">×</button></div>`;
+}
+function chargeEditor(pfx, list, quick) {
+  return `<div class="ch-ed" id="${pfx}-ch">${(list || []).map(chargeRowHtml).join('')}</div>
+    <div class="ch-add">${(quick || []).map(k => `<button type="button" class="btn sm" data-chq="${k}" data-pfx="${pfx}">+ ${chargeType(k)}</button>`).join('')}<button type="button" class="btn sm primary" data-chadd="${pfx}">+ Add charge</button></div>`;
+}
+function wireCharges(root, pfx, onChange) {
+  const box = root.querySelector('#' + pfx + '-ch'); if (!box) return;
+  const add = type => { box.insertAdjacentHTML('beforeend', chargeRowHtml({ type, amount: '' })); const r = box.lastElementChild; r.querySelector('input[type=number]').focus(); onChange && onChange(); };
+  root.querySelectorAll(`[data-chadd="${pfx}"]`).forEach(bt => bt.onclick = () => add('delivery'));
+  root.querySelectorAll(`[data-chq][data-pfx="${pfx}"]`).forEach(bt => bt.onclick = () => add(bt.dataset.chq));
+  box.addEventListener('click', e => { const x = e.target.closest('.x'); if (x) { x.closest('.ch-row').remove(); onChange && onChange(); } });
+  box.addEventListener('input', () => onChange && onChange());
+  box.addEventListener('change', e => { const s = e.target.closest('select'); if (s) { const i = s.parentNode.querySelector('input'); i.placeholder = s.value === 'other' ? 'Name of charge' : 'Details (optional)'; } onChange && onChange(); });
+}
+function readCharges(root, pfx, stage) {
+  return [...root.querySelectorAll('#' + pfx + '-ch .ch-row')].map(r => {
+    let m = {}; try { m = JSON.parse(r.dataset.meta || '{}'); } catch (e) { }
+    const [sel, lab, am] = [r.querySelector('select'), r.querySelector('input'), r.querySelector('input[type=number]')];
+    return { type: sel.value, label: lab.value.trim(), amount: r2(parseFloat(am.value) || 0), stage: m.stage || stage, at: m.at || nowLocal(), by: m.by || S.me.name };
+  }).filter(c => c.amount > 0);
+}
 
 const ACT = {};
 /* WhatsApp: phones open the app; computers open WhatsApp Web, because the Windows desktop app breaks emojis sent through a link */
@@ -1380,15 +1425,13 @@ ACT.day = d => {
 function pickupRead() {
   const v = id => parseFloat(($('#' + id) || {}).value) || 0;
   const method = ($('#h-paym') || {}).value || 'cash';
-  return { salik: v('h-salik'), parking: v('h-park'), fines: v('h-fines'), extraDays: parseInt(($('#h-xdays') || {}).value, 10) || 0,
-    otherLabel: (($('#h-othl') || {}).value || '').trim(), otherAmount: v('h-otha'), method, ccPct: method === 'card' ? +((($('input[name=h-cc]:checked') || {}).value) || 0) : 0 };
+  return { extraDays: parseInt(($('#h-xdays') || {}).value, 10) || 0, extras: $('#h-ch') ? readCharges(document, 'h', 'pickup') : [], method, ccPct: method === 'card' ? +((($('input[name=h-cc]:checked') || {}).value) || 0) : 0 };
 }
 function pickupCalc(b, f, pc) {
   const vm = f.vatMode || 'plus', v = vatRate(), rows = [];
   const rent = estimate({ ...b, days: (+b.days || 0) + (f.rateType === 'month' ? 0 : pc.extraDays) }, f);
   rows.push({ label: `Rent ${(+b.days || 0) + (f.rateType === 'month' ? 0 : pc.extraDays)} days${pc.extraDays && f.rateType !== 'month' ? ` (incl. ${pc.extraDays} extra)` : ''}`, gross: rent.gross });
-  [['Salik', pc.salik], ['Parking', pc.parking], [pc.otherLabel || 'Other', pc.otherAmount]].forEach(([l, a]) => { if (a) rows.push({ label: `${l} (${MODE_LABEL[vm]})`, gross: lineCalc(a, vm, v).gross }); });
-  if (pc.fines) rows.push({ label: 'Traffic fines (no VAT)', gross: r2(pc.fines) });
+  chargeRows(f, [...(f.extras || []), ...(pc.extras || []), ...legacyCharges(pc)]).forEach(r => rows.push({ label: r.label, gross: r.gross }));
   const subtotal = r2(rows.reduce((s, r) => s + r.gross, 0));
   const cc = pc.method === 'card' ? r2(subtotal * (pc.ccPct || 0) / 100) : 0, ccVat = r2(cc * v);
   const total = r2(subtotal + cc + ccVat), paid = paidSoFar(f);
@@ -1415,7 +1458,7 @@ function returnedMsg(b, x) {
   const em = waStyle() === 'emoji', dot = em ? '•' : '-';
   const out = b.deliveryHandover || {}, kmOut = +(b.legOutHandover || out).km || 0, kmIn = +x.ho.km || 0;
   const pc = x.pc || {};
-  const ch = [pc.extraDays ? `${pc.extraDays} extra day${pc.extraDays === 1 ? '' : 's'}` : '', pc.salik ? `Salik ${amt(pc.salik)}` : '', pc.parking ? `Parking ${amt(pc.parking)}` : '', pc.fines ? `Fines ${amt(pc.fines)}` : '', pc.otherAmount ? `${pc.otherLabel || 'Other'} ${amt(pc.otherAmount)}` : ''].filter(Boolean);
+  const ch = [pc.extraDays ? `${pc.extraDays} extra day${pc.extraDays === 1 ? '' : 's'}` : '', ...[...(pc.extras || []), ...legacyCharges(pc)].map(c => `${chargeName(c)} ${amt(c.amount)}`)].filter(Boolean);
   const used = b.deliveredAt ? Math.max(1, Math.ceil((parseDT(x.at) - parseDT(b.deliveredAt)) / 864e5 - 0.0417)) : null;
   return [statusMsgHead('RETURNED', em, String.fromCodePoint(0x1F519)), `${b.ref}${x.agr ? ', Agr ' + x.agr : ''}`, '',
     `${dot} Vehicle: ${b.carName}${b.plate ? ` (${b.plate})` : ''}`,
@@ -1454,9 +1497,8 @@ ACT.done = ({ id, type }) => {
     <label class="f">Fuel${+((S.cars.find(x => x.id === b.carId) || {}).fuelPoints) === 4 ? ' (4-point gauge)' : ''}<select id="h-fuel">${fuelOpts(b.carId)}</select></label></div>
     <label class="f">Damage and notes<textarea id="h-notes" placeholder="${del ? 'Scratch on rear bumper' : 'No new damage'}"></textarea></label>
     ${del ? '' : `<h3 class="sub-h">Charges at return</h3>
-    <div class="grid2"><label class="f">Salik (AED)<input id="h-salik" class="hc" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></label><label class="f">Parking (AED)<input id="h-park" class="hc" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></label></div>
-    <div class="grid2"><label class="f">Traffic fines, no VAT (AED)<input id="h-fines" class="hc" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></label><label class="f">Extra days (if late)<input id="h-xdays" class="hc" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label></div>
-    <div class="grid2"><label class="f">Other charge<input id="h-othl" placeholder="Car wash, damage, fuel"></label><label class="f">Amount (AED)<input id="h-otha" class="hc" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></label></div>`}
+    <label class="f">Extra days (if late)<input id="h-xdays" class="hc" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>
+    <div style="margin-top:10px">${chargeEditor('h', [], ['salik', 'fuel', 'cleaning', 'fine', 'pickup'])}</div>`}
     <div id="h-due" class="calc small" style="margin-top:12px">Loading price…</div>
     <div class="grid2"><label class="f">Payment collected (AED)<input id="h-pay" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></label>
     <label class="f">Paid by<select id="h-paym"><option value="cash">Cash</option><option value="card">Card</option><option value="bank">Bank transfer</option></select></label></div>
@@ -1469,8 +1511,10 @@ ACT.done = ({ id, type }) => {
     if (!f) { box.textContent = 'Price not available.'; return; }
     const e = estimate(b, f), paid = paidSoFar(f);
     if (del) {
+      const xr = chargeRows(f, allCharges(f)), tot = r2(e.gross + xr.reduce((s, r) => s + r.gross, 0));
       box.innerHTML = `<div class="r"><span>Rate</span><span>${rateText(f)}, ${MODE_LABEL[f.vatMode] || ''}</span></div><div class="r"><span>Rent ${b.days} days${f.rateType === 'month' ? ' (estimate)' : ''}</span><strong>AED ${money(e.gross)}</strong></div>
-        <div class="r"><span>Paid so far</span><span>AED ${money(paid)}</span></div><div class="r t"><span>Rent balance</span><strong>AED ${money(e.gross - paid)}</strong></div>`;
+        ${xr.map(r => `<div class="r"><span>${esc(r.label)}</span><span>AED ${money(r.gross)}</span></div>`).join('')}
+        <div class="r"><span>Paid so far</span><span>AED ${money(paid)}</span></div><div class="r t"><span>Balance</span><strong>AED ${money(tot - paid)}</strong></div>`;
       return;
     }
     let typed = false; o.querySelector('#h-pay').addEventListener('input', () => { typed = true; });
@@ -1486,7 +1530,7 @@ ACT.done = ({ id, type }) => {
         ${f.rateType === 'month' ? '<div class="small muted">Monthly contract: rent shown is an estimate. Sales confirm the final rent at settlement.</div>' : ''}`;
       if (!typed) o.querySelector('#h-pay').value = s.due > 0 ? s.due.toFixed(2) : '';
     };
-    o.querySelectorAll('.hc, #h-othl').forEach(x => x.addEventListener('input', calc));
+    o.querySelectorAll('.hc').forEach(x => x.addEventListener('input', calc)); wireCharges(o, 'h', calc);
     o.querySelector('#h-paym').addEventListener('change', calc);
     o.querySelectorAll('input[name=h-cc]').forEach(x => x.addEventListener('change', calc));
     o._fin = f; calc();
@@ -1524,14 +1568,14 @@ ACT.done = ({ id, type }) => {
     upd.updatedAt = FV.serverTimestamp(); upd.updatedBy = S.me.name;
     const logs = [{ at, by: S.me.name, text: del ? `Delivered on ${fmtDT(at)} (KM ${ho.km || '-'}, fuel ${ho.fuel})` : `Returned on ${fmtDT(at)} (KM ${ho.km || '-'}, fuel ${ho.fuel})` }];
     moveLog.forEach(text => logs.push({ at: nowLocal(), by: S.me.name, text }));
-    if (pc && (pc.salik || pc.parking || pc.fines || pc.otherAmount || pc.extraDays)) logs.push({ at, by: S.me.name, text: `Charges at return: ${[pc.extraDays ? pc.extraDays + ' extra days' : '', pc.salik ? 'Salik ' + money(pc.salik) : '', pc.parking ? 'parking ' + money(pc.parking) : '', pc.fines ? 'fines ' + money(pc.fines) : '', pc.otherAmount ? (pc.otherLabel || 'other') + ' ' + money(pc.otherAmount) : ''].filter(Boolean).join(', ')}` });
+    if (pc && (pc.extraDays || (pc.extras || []).length)) logs.push({ at, by: S.me.name, text: `Charges at return: ${[pc.extraDays ? pc.extraDays + ' extra days' : '', ...(pc.extras || []).map(c => `${chargeName(c)} ${money(c.amount)}`)].filter(Boolean).join(', ')}` });
     if (payAmt) logs.push({ at, by: S.me.name, text: `Payment collected AED ${money(payAmt)} by ${payM}` });
     upd.log = FV.arrayUnion(...logs);
     try {
       const batch = db.batch(); batch.update(db.doc('bookings/' + id), upd);
       const fu = {};
       if (payAmt) fu.payments = FV.arrayUnion({ at, by: S.me.name, amount: payAmt, method: payM, stage: del ? 'delivery' : 'pickup' });
-      if (pc && (pc.salik || pc.parking || pc.fines || pc.otherAmount || pc.extraDays || payM === 'card')) fu.pickupCharges = pc;
+      if (pc && (pc.extraDays || (pc.extras || []).length || payM === 'card')) fu.pickupCharges = pc;
       if (Object.keys(fu).length) batch.update(db.doc('finance/' + id), fu);
       await batch.commit();
       closeSheet(); toast((del ? 'Marked delivered. Pickup task added.' : 'Marked picked up.') + (payAmt ? ` AED ${money(payAmt)} recorded.` : '')); if (S.route === 'booking') backToList();
@@ -1638,7 +1682,7 @@ ACT.deletebk = async ({ id }) => {
 function waText(b, f) {
   const lines = [`*${S.settings.companyName || COMPANY}*`, `Booking ${b.ref}`, '', `Client: ${b.clientName}`, `Car: ${b.carName} (${b.plate})`,
     `*Delivery: ${fmtDT(b.deliveryAt)}*`, `Location: ${b.location || '-'}`, `*Return: ${fmtDT(b.pickupAt)}*`, `Days: ${b.days}`];
-  if (f) { const e = estimate(b, f); lines.push(`Rate: ${rateText(f)} (${MODE_LABEL[f.vatMode]})`, `Total: AED ${money(e.gross)} incl. VAT`); }
+  if (f) { const e = estimate(b, f); lines.push(`Rate: ${rateText(f)} (${MODE_LABEL[f.vatMode]})`, ...chargeRows(f, allCharges(f)).map(r => `${r.label}: AED ${money(r.gross)}`), `Total: AED ${money(r2(e.gross + chargesGross(f)))} incl. VAT`); }
   return lines.join('\n');
 }
 const waNum = p => { let d = String(p || '').replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '971' + d.slice(1); return d; };
@@ -1766,6 +1810,7 @@ function bookedMsg(b, f, updated) {
   const lines = [em ? `${EMO.carF} BOOKED ${EMO.ok} ${EMO.carF}` : '*BOOKED*', updated ? `${b.ref} (updated)` : b.ref, '',
     `${dot} Vehicle: ${b.carName}`,
     f ? `${dot} Rate: AED ${amt(f.rate)} per ${f.rateType === 'month' ? 'month' : 'day'}, ${f.vatMode === 'incl' ? 'VAT included' : '+VAT'}` : '',
+    ...(f ? (f.extras || []).filter(c => +c.amount).map(c => `${dot} ${chargeName(c)}: AED ${amt(c.amount)}${c.type === 'fine' ? ' (no VAT)' : f.vatMode === 'incl' ? ', VAT included' : ' +VAT'}`) : []),
     `${dot} Days: ${b.days}${b.extendable ? ' (Extendable)' : ''}`,
     `${dot} Delivery: ${dmy(b.deliveryAt)}`,
     `${dot} Return: ${dmy(b.pickupAt)}`,
@@ -1871,6 +1916,46 @@ function histSummaryHtml(b) {
   return `<div class="hs">${row('Delivery', pd, b.deliveredAt, (b.deliveryHandover || {}).by)}${row('Return', pp, b.pickedUpAt, (b.pickupHandover || {}).by)}</div>`;
 }
 
+
+/* + Add charge from the booking page, for charges that come later (fuel, cleaning, Salik, fines) */
+ACT.addcharge = ({ id }) => {
+  const b = getB(id); if (!b) return;
+  const o = openSheet(`<h2>Add charge</h2><p class="muted" style="margin:4px 0 0">${b.oldRef ? agrTitle(b) : esc(b.ref + ', ' + b.clientName)}<br>${carLabel(b)}</p>
+    <div style="margin-top:10px">${chargeEditor('ac', [{ type: 'fuel', amount: '' }], ['delivery', 'pickup', 'cleaning', 'salik', 'fine'])}</div>
+    <div class="calc small" id="ac-sum" style="margin-top:10px"></div><p class="err" id="ac-err"></p>
+    <div class="btnrow"><button class="btn" data-act="close">Go back</button><button class="btn primary" id="ac-save">Save charges</button></div>`);
+  const f0 = S.fin.get(id) || {};
+  const sum = () => { const r = chargeRows(f0, readCharges(o, 'ac', 'later')); o.querySelector('#ac-sum').innerHTML = r.length ? r.map(x => `<div class="r"><span>${esc(x.label)}</span><span>AED ${money(x.gross)}</span></div>`).join('') + `<div class="r t"><span>Charges total</span><strong>AED ${money(r.reduce((s, x) => s + x.gross, 0))}</strong></div>` : '<div class="r">Enter an amount.</div>'; };
+  wireCharges(o, 'ac', sum); sum();
+  o.querySelector('#ac-save').onclick = async ev => {
+    const items = readCharges(o, 'ac', 'later');
+    if (!items.length) { o.querySelector('#ac-err').textContent = 'Enter at least one amount.'; return; }
+    if (items.some(c => c.type === 'other' && !c.label)) { o.querySelector('#ac-err').textContent = 'Give the "Other" charge a name.'; return; }
+    ev.target.disabled = true;
+    try {
+      const batch = db.batch();
+      batch.update(db.doc('finance/' + id), { extras: FV.arrayUnion(...items) });
+      batch.update(db.doc('bookings/' + id), { updatedAt: FV.serverTimestamp(), updatedBy: S.me.name, log: FV.arrayUnion({ at: nowLocal(), by: S.me.name, text: `Charge added: ${items.map(c => `${chargeName(c)} AED ${money(c.amount)}`).join(', ')}` }) });
+      await batch.commit();
+      const f = S.fin.get(id); if (f) f.extras = [...(f.extras || []), ...items];
+      closeSheet(); toast(`${items.length} charge${items.length === 1 ? '' : 's'} added.`); render();
+    } catch (e) { ev.target.disabled = false; o.querySelector('#ac-err').textContent = friendlyError(e); }
+  };
+};
+ACT.rmcharge = async ({ id, src, i }) => {
+  const f = S.fin.get(id), b = getB(id); if (!f || !b) return;
+  const list = src === 'p' ? ((f.pickupCharges && f.pickupCharges.extras) || []).slice() : (f.extras || []).slice();
+  const c = list[+i]; if (!c) return;
+  if (!(await ask({ title: 'Remove this charge?', ok: 'Remove', danger: true, text: `<strong>${esc(chargeName(c))}, AED ${money(c.amount)}</strong> will be removed from ${esc(b.oldRef || b.ref)}.` }))) return;
+  list.splice(+i, 1);
+  const upd = src === 'p' ? { pickupCharges: { ...f.pickupCharges, extras: list } } : { extras: list };
+  const batch = db.batch();
+  batch.update(db.doc('finance/' + id), upd);
+  batch.update(db.doc('bookings/' + id), { updatedAt: FV.serverTimestamp(), updatedBy: S.me.name, log: FV.arrayUnion({ at: nowLocal(), by: S.me.name, text: `Charge removed: ${chargeName(c)} AED ${money(c.amount)}` }) });
+  await batch.commit();
+  Object.assign(f, upd); toast('Charge removed.'); render();
+};
+
 /* ========================================================= booking detail */
 function viewDetail(id) {
   ensureDetail(id);
@@ -1888,9 +1973,14 @@ function viewDetail(id) {
         <dt>Rent (${b.days} days)${f.rateType === 'month' ? ', estimate' : ''}</dt><dd>AED ${money(e.net)} + VAT ${money(e.vat)}</dd>
         <dt>Rent total</dt><dd class="big">AED ${money(e.gross)}</dd>
         ${+f.advance ? `<dt>Advance paid</dt><dd>AED ${money(f.advance)} (${esc(f.advanceMethod || 'cash')})</dd>` : ''}
-        ${f.pickupCharges ? `<dt>Charges at return</dt><dd>${esc([f.pickupCharges.extraDays ? f.pickupCharges.extraDays + ' extra days' : '', f.pickupCharges.salik ? 'Salik ' + money(f.pickupCharges.salik) : '', f.pickupCharges.parking ? 'Parking ' + money(f.pickupCharges.parking) : '', f.pickupCharges.fines ? 'Fines ' + money(f.pickupCharges.fines) : '', f.pickupCharges.otherAmount ? (f.pickupCharges.otherLabel || 'Other') + ' ' + money(f.pickupCharges.otherAmount) : ''].filter(Boolean).join(', ') || 'None')}<br><span class="muted small">entered by ${esc(f.pickupCharges.by || '')}</span></dd>` : ''}
+        ${f.pickupCharges && +f.pickupCharges.extraDays ? `<dt>Extra days at return</dt><dd>${+f.pickupCharges.extraDays}</dd>` : ''}
+        ${(() => { const xs = [...(f.extras || []).map((c, i) => ({ c, src: 'x', i })), ...((f.pickupCharges && f.pickupCharges.extras) || []).map((c, i) => ({ c, src: 'p', i })), ...legacyCharges(f.pickupCharges).map(c => ({ c }))];
+          const canRm = role() === 'admin' || role() === 'sales';
+          return xs.map(({ c, src, i }) => { const r = chargeRows(f, [c])[0]; return r ? `<dt>${esc(chargeName(c))}</dt><dd>AED ${money(r.gross)} <span class="muted small">${esc(MODE_LABEL[r.mode])}${c.by ? `, ${esc(c.by)}` : ''}</span>${canRm && src ? ` <button class="btn sm ch-rm" data-act="rmcharge" data-id="${id}" data-src="${src}" data-i="${i}" aria-label="Remove ${esc(chargeName(c))}">×</button>` : ''}</dd>` : ''; }).join('')
+            + (xs.length ? `<dt>Total</dt><dd class="big">AED ${money(r2(e.gross + chargesGross(f)))}</dd>` : ''); })()}
+        ${b.status !== 'cancelled' ? `<dt></dt><dd><button class="btn sm primary" data-act="addcharge" data-id="${id}">+ Add charge</button></dd>` : ''}
         ${(f.payments || []).map(p => `<dt>Collected</dt><dd>AED ${money(p.amount)} by ${esc(p.method)}<br><span class="muted small">${esc(p.by)}, ${esc(fmtDT(p.at))}, at ${esc(p.stage)}</span></dd>`).join('')}
-        ${paidSoFar(f) ? `<dt>Rent balance</dt><dd><strong>AED ${money(estimate(b, f).gross - paidSoFar(f))}</strong></dd>` : ''}
+        ${paidSoFar(f) ? `<dt>Balance</dt><dd><strong>AED ${money(r2(estimate(b, f).gross + chargesGross(f) - paidSoFar(f)))}</strong></dd>` : ''}
       </dl>${f.settlement && f.settlement.totals ? `<div class="calc">${settlementRowsHtml(f.settlement)}</div>` : ''}</section>`;
     }
   }
@@ -2098,7 +2188,7 @@ function viewForm(id) {
     agr: b ? b.oldRef || '' : '', clientName: b ? b.clientName : '', clientPhone: b ? b.clientPhone || '' : '', location: b ? b.location || '' : '', pickupLocation: b ? b.pickupLocation || '' : '',
     carId: b ? (b.carTba ? '__tba' : b.carId) : pre, tbaModel: b && b.carTba ? b.carName : '', date: b ? b.deliveryDate : todayStr(), time: b ? tOf(b.deliveryAt) : '10:00', days: b ? b.days : 1,
     rate: f ? f.rate : '', rateType: f ? f.rateType || 'day' : 'day', vatMode: f ? f.vatMode : (S.settings.defaultVatMode || 'plus'), sp: b ? b.salespersonId : (mySp ? mySp.id : ''),
-    drv: b ? b.deliveryDriverId || '' : '', ext: b ? !!b.extendable : false, docs: b ? !!b.collectDocs : false, advance: f ? f.advance || '' : '', advMethod: f ? f.advanceMethod || 'cash' : 'cash', notes: b ? b.notes || '' : ''
+    drv: b ? b.deliveryDriverId || '' : '', ext: b ? !!b.extendable : false, docs: b ? !!b.collectDocs : false, advance: f ? f.advance || '' : '', advMethod: f ? f.advanceMethod || 'cash' : 'cash', extras: f ? f.extras || [] : [], notes: b ? b.notes || '' : ''
   };
   const html = `
   ${!cars.length ? `<p class="warn">Add your cars first. ${isAdmin() ? '<a href="#/cars">Go to cars</a>' : 'Ask an admin to add them.'}</p>` : ''}
@@ -2137,6 +2227,9 @@ function viewForm(id) {
     <div class="pill-choice" role="radiogroup" aria-label="VAT"><label><input type="radio" name="b-vat" value="plus" ${v.vatMode === 'plus' ? 'checked' : ''}><span>Price + VAT</span></label><label><input type="radio" name="b-vat" value="incl" ${v.vatMode === 'incl' ? 'checked' : ''}><span>VAT inclusive</span></label></div>
     <div class="grid2"><label class="f">Advance paid (AED)<input id="b-adv" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(v.advance)}" placeholder="0"></label>
     <label class="f">Advance method<select id="b-advm">${[['cash', 'Cash'], ['card', 'Card'], ['bank', 'Bank transfer']].map(([k, l]) => `<option value="${k}" ${v.advMethod === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <h3 class="sub-h">Extra charges</h3>
+    <p class="small muted" style="margin:0 0 6px">Delivery or pickup charge, cleaning, fuel and so on. They follow the VAT choice above.</p>
+    ${chargeEditor('b', v.extras, ['delivery', 'pickup'])}
     <div class="calc num" id="b-calc"></div>
   </section>
   <section class="card"><h2>Team and notes</h2>
@@ -2152,17 +2245,19 @@ function viewForm(id) {
       agr: $('#b-agr').value.trim(), name: $('#b-name').value.trim(), phone: $('#b-phone').value.trim(), loc: $('#b-loc').value.trim(), ploc: $('#b-ploc').value.trim(),
       carId: $('#b-car').value, hire: { supplier: ($('#h-sup') || {}).value?.trim() || '', make: $('#h-make').value.trim(), model: $('#h-model').value.trim(), year: $('#h-year').value.trim(), color: $('#h-color').value.trim(), plate: $('#h-plate').value.trim().toUpperCase() }, date: $('#b-date').value, time: $('#b-time').value, days: parseInt($('#b-days').value, 10) || 0,
       rate: parseFloat($('#b-rate').value) || 0, rt: $('#b-rt').value, vat: ($('input[name=b-vat]:checked') || {}).value || 'plus',
-      adv: parseFloat($('#b-adv').value) || 0, advm: $('#b-advm').value, sp: $('#b-sp').value, drv: $('#b-drv').value, docs: $('#b-docs').checked, ext: $('#b-ext').checked, notes: $('#b-notes').value.trim()
+      adv: parseFloat($('#b-adv').value) || 0, advm: $('#b-advm').value, sp: $('#b-sp').value, drv: $('#b-drv').value, docs: $('#b-docs').checked, ext: $('#b-ext').checked, notes: $('#b-notes').value.trim(), extras: readCharges(document, 'b', 'booking')
     });
     const upd = () => {
       const x = val();
       const e = estimate({ days: x.days }, { rate: x.rate, rateType: x.rt, vatMode: x.vat });
+      const xr = chargeRows({ vatMode: x.vat }, x.extras), xg = r2(xr.reduce((s, r) => s + r.gross, 0)), tot = r2(e.gross + xg);
       const pu = x.date && x.time && x.days ? `${addDays(x.date, x.days)}T${x.time}` : '';
       $('#b-calc').innerHTML = `${pu ? `<div class="r"><span>Return</span><strong>${esc(fmtDT(pu))}</strong></div>` : ''}
         <div class="r"><span>${x.rt === 'month' ? `Rent estimate, ${x.days} days of AED ${money(x.rate)} a month` : `Rent ${x.days} × ${money(x.rate)}`}</span><span>${money(e.net)}</span></div>
         <div class="r"><span>VAT ${S.settings.vatRate ?? 5}%${x.vat === 'incl' ? ' (included)' : ''}</span><span>${money(e.vat)}</span></div>
-        <div class="r t g"><span>Total AED</span><span>${money(e.gross)}</span></div>
-        ${x.adv ? `<div class="r"><span>Balance after advance</span><span>${money(e.gross - x.adv)}</span></div>` : ''}`;
+        ${xr.length ? `<div class="r t"><span>Rent total</span><span>${money(e.gross)}</span></div>${xr.map(r => `<div class="r"><span>${esc(r.label)}</span><span>${money(r.gross)}</span></div>`).join('')}` : ''}
+        <div class="r t g"><span>Total AED</span><span>${money(tot)}</span></div>
+        ${x.adv ? `<div class="r"><span>Balance after advance</span><span>${money(tot - x.adv)}</span></div>` : ''}`;
       const sel = $('#b-car'), keep = sel.value;
       const st = x.date && x.time ? `${x.date}T${x.time}` : '';
       if (st && pu && sel.dataset.k !== st + pu) { sel.dataset.k = st + pu; sel.innerHTML = carOptions(st, pu, keep, id); sel.value = keep; }
@@ -2193,6 +2288,7 @@ function viewForm(id) {
       });
     }
     const tb = $('#b-tpl'); if (tb) tb.onclick = () => { $('#b-paste').value = PASTE_TEMPLATE; $('#b-paste').focus(); };
+    wireCharges(document, 'b', upd);
     let pastOk = id ? (b && b.deliveryDate) : '';
     const pastCheck = async () => {
       const d = $('#b-date').value; if (!d || d >= todayStr() || d === pastOk) return true;
@@ -2243,7 +2339,7 @@ function viewForm(id) {
         salespersonId: x.sp, salespersonName: sp.name || (b && !x.sp && b.salespersonName ? b.salespersonName : S.me.name), salespersonUid: sp.uid || (b && !x.sp ? b.salespersonUid || '' : (x.sp ? '' : S.me.id)), deliveryDriverId: x.drv, deliveryDriverName: dr.name || '',
         notes: x.notes, collectDocs: x.docs, extendable: x.ext, updatedAt: FV.serverTimestamp(), updatedBy: S.me.name
       };
-      const fin = { rate: x.rate, rateType: x.rt, vatMode: x.vat, advance: x.adv, advanceMethod: x.advm };
+      const fin = { rate: x.rate, rateType: x.rt, vatMode: x.vat, advance: x.adv, advanceMethod: x.advm, extras: x.extras };
       try {
         const batch = batch0;
         if (!id) {
@@ -2276,8 +2372,8 @@ function viewSettle(id) {
   const ccOpts = String(S.settings.ccOptions || '4,5').split(',').map(s => +s.trim()).filter(n => n > 0);
   const init = {
     rentDays: st.rentDays ?? ((+b.days || 0) + (pc0 && f.rateType !== 'month' ? (+pc0.extraDays || 0) : 0)), rentAmount: st.rentAmount ?? '', rentLines: st.rentLines || null,
-    lines: st.lines || [{ label: 'Salik', amount: pc0 ? pc0.salik || '' : '', mode: vm }, { label: 'Parking', amount: pc0 ? pc0.parking || '' : '', mode: vm }, ...(pc0 && pc0.otherAmount ? [{ label: pc0.otherLabel || 'Other', amount: pc0.otherAmount, mode: vm }] : [])],
-    fines: st.fines ?? (pc0 ? pc0.fines || '' : ''), advance: st.advance ?? paidSoFar(f), method: st.method || (pc0 && pc0.method) || 'cash', ccPct: st.ccPct ?? ((pc0 && pc0.ccPct) || S.settings.defaultCc || ccOpts[ccOpts.length - 1] || 5), notes: st.notes || ''
+    lines: st.lines || (allCharges(f).filter(c => c.type !== 'fine').length ? allCharges(f).filter(c => c.type !== 'fine').map(c => ({ label: chargeName(c), amount: c.amount, mode: vm })) : [{ label: 'Salik', amount: '', mode: vm }, { label: 'Parking', amount: '', mode: vm }]),
+    fines: st.fines ?? (r2(allCharges(f).filter(c => c.type === 'fine').reduce((s, c) => s + (+c.amount || 0), 0)) || ''), advance: st.advance ?? paidSoFar(f), method: st.method || (pc0 && pc0.method) || 'cash', ccPct: st.ccPct ?? ((pc0 && pc0.ccPct) || S.settings.defaultCc || ccOpts[ccOpts.length - 1] || 5), notes: st.notes || ''
   };
   const elapsed = b.deliveredAt && b.pickedUpAt ? Math.max(1, Math.ceil((parseDT(b.pickedUpAt) - parseDT(b.deliveredAt)) / 864e5 - 0.0417)) : null;
   const modeSel = m => `<select aria-label="VAT">${['plus', 'incl'].map(k => `<option value="${k}" ${m === k ? 'selected' : ''}>${MODE_LABEL[k]}</option>`).join('')}</select>`;
@@ -3169,11 +3265,12 @@ ACT.daysheet = async () => {
   let totD = 0, totP = 0;
   const rows = tasks.map((t, i) => {
     const b = t.b, f = fins.get(b.id), e = f ? estimate(b, f) : null;
-    if (e) { if (t.type === 'delivery') totD += e.gross; else totP += e.gross; }
+    const tg = e ? r2(e.gross + chargesGross(f)) : 0;
+    if (e) { if (t.type === 'delivery') totD += tg; else totP += tg; }
     const loc = t.type === 'pickup' ? (b.pickupLocation || b.location) : b.location;
     return `<tr><td>${i + 1}</td><td><strong>${time12(tOf(t.at))}</strong></td><td class="${t.type === 'delivery' ? 'p-type-d' : 'p-type-p'}">${t.type === 'delivery' ? 'Delivery' : 'Pickup'}${t.done ? ' (done)' : ''}${t.type === 'delivery' && b.collectDocs && !b.docsCollected ? '<br><span style="color:#7A4500">+ collect documents</span>' : ''}${b.notes ? `<br><span style="color:#444;font-weight:400">Note: ${esc(b.notes.slice(0, 80))}</span>` : ''}</td>
       <td>${esc(b.oldRef || '')}</td><td><strong style="font-size:12.5px">${esc(b.carTba ? 'TO ASSIGN' : b.plate)}</strong></td><td>${esc(b.carName)}${b.carType === 'sublease' ? `<br><em style="color:#7A4500">Sub-lease: ${esc(b.supplier || '')}</em>` : ''}</td><td>${esc(b.clientName)}</td><td>${esc(b.clientPhone || '')}</td><td>${esc(loc || '')}</td><td class="r">${b.days}${b.extendable ? '+' : ''}</td>
-      ${staff ? `<td class="r">${f ? money(f.rate) + (f.rateType === 'month' ? '/mo' : '') : ''}</td><td class="r">${e ? money(e.gross) : ''}</td>` : ''}<td>${esc(b.salespersonName || '')}</td><td>${esc((t.type === 'delivery' ? b.deliveryDriverName : b.pickupDriverName) || '')}</td></tr>`;
+      ${staff ? `<td class="r">${f ? money(f.rate) + (f.rateType === 'month' ? '/mo' : '') : ''}</td><td class="r">${e ? money(tg) : ''}</td>` : ''}<td>${esc(b.salespersonName || '')}</td><td>${esc((t.type === 'delivery' ? b.deliveryDriverName : b.pickupDriverName) || '')}</td></tr>`;
   }).join('');
   const nd = tasks.filter(t => t.type === 'delivery').length;
   doPrint(`${printHeader('Daily delivery and pickup sheet', fmtLong(D))}
@@ -3182,7 +3279,7 @@ ACT.daysheet = async () => {
     <tfoot><tr class="p-sub"><td colspan="${staff ? 11 : 10}">Deliveries (${nd})</td>${staff ? `<td class="r">${money(totD)}</td>` : ''}<td colspan="2"></td></tr>
       <tr class="p-sub"><td colspan="${staff ? 11 : 10}">Pickups (${tasks.length - nd})</td>${staff ? `<td class="r">${money(totP)}</td>` : ''}<td colspan="2"></td></tr>
       <tr class="p-total"><td colspan="${staff ? 11 : 10}">Total for the day (${tasks.length} task${tasks.length === 1 ? '' : 's'})</td>${staff ? `<td class="r">${money(totD + totP)}</td>` : ''}<td colspan="2"></td></tr></tfoot></table>
-    ${staff ? '<p style="font-size:9.5px;color:#555">Total AED is each booking\'s rent including VAT (days × rate). Salik, fines and other charges added at return are not included.</p>' : ''}
+    ${staff ? '<p style="font-size:9.5px;color:#555">Total AED is each booking\'s rent (days × rate) plus its extra charges such as delivery or cleaning, including VAT.</p>' : ''}
     <div class="p-sign"><div>Prepared by</div><div>Driver</div><div>Approved by</div></div>${printFoot()}`, true, `Delivery-sheet-${D}`);
 };
 ACT.slip = ({ id }) => {
@@ -3193,8 +3290,8 @@ ACT.slip = ({ id }) => {
     <div class="p-sec"><h2>Vehicle</h2><dl class="p-kv"><dt>Car</dt><dd class="p-big">${esc(b.carName)}</dd><dt>Plate</dt><dd class="p-big">${esc(b.plate)}</dd>${(() => { const c = S.cars.find(x => x.id === b.carId); return c ? `<dt>Color</dt><dd>${esc(c.color || '-')}</dd><dt>Category</dt><dd>${esc(c.category || '-')}</dd>` : ''; })()}</dl></div>
     <div class="p-sec"><h2>Rental period</h2><dl class="p-kv"><dt>Delivery</dt><dd class="p-big">${esc(fmtDT(b.deliveryAt))}</dd><dt>Return</dt><dd class="p-big">${esc(fmtDT(b.pickupAt))}</dd><dt>Days</dt><dd>${b.days}${b.extendable ? ' (extendable)' : ''}</dd><dt>Salesperson</dt><dd>${esc(b.salespersonName || '-')}</dd></dl></div>
     ${e ? `<div class="p-sec"><h2>Charges</h2><table class="p-tbl"><thead><tr><th>Description</th><th class="r">Amount</th><th class="r">VAT ${S.settings.vatRate ?? 5}%</th><th class="r">Total AED</th></tr></thead>
-      <tbody><tr><td>${f.rateType === 'month' ? `Rent estimate, ${b.days} days at ${rateText(f)}` : `Rent ${b.days} days × AED ${money(f.rate)}`} (${MODE_LABEL[f.vatMode]})</td><td class="r">${money(e.net)}</td><td class="r">${money(e.vat)}</td><td class="r">${money(e.gross)}</td></tr></tbody>
-      <tfoot><tr class="p-total"><td colspan="3">Total</td><td class="r">${money(e.gross)}</td></tr>${+f.advance ? `<tr><td colspan="3">Advance paid (${esc(f.advanceMethod || 'cash')})</td><td class="r">${money(f.advance)}</td></tr><tr class="p-total"><td colspan="3">Balance</td><td class="r">${money(e.gross - f.advance)}</td></tr>` : ''}</tfoot></table>
+      <tbody><tr><td>${f.rateType === 'month' ? `Rent estimate, ${b.days} days at ${rateText(f)}` : `Rent ${b.days} days × AED ${money(f.rate)}`} (${MODE_LABEL[f.vatMode]})</td><td class="r">${money(e.net)}</td><td class="r">${money(e.vat)}</td><td class="r">${money(e.gross)}</td></tr>${chargeRows(f, allCharges(f)).map(r => `<tr><td>${esc(r.label)}</td><td class="r">${money(r.net)}</td><td class="r">${money(r.vat)}</td><td class="r">${money(r.gross)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr class="p-total"><td colspan="3">Total</td><td class="r">${money(r2(e.gross + chargesGross(f)))}</td></tr>${+f.advance ? `<tr><td colspan="3">Advance paid (${esc(f.advanceMethod || 'cash')})</td><td class="r">${money(f.advance)}</td></tr><tr class="p-total"><td colspan="3">Balance</td><td class="r">${money(r2(e.gross + chargesGross(f) - f.advance))}</td></tr>` : ''}</tfoot></table>
       <p style="font-size:9.5px;color:#555">Salik, parking, traffic fines and other charges during the rental are billed at return. Card payments carry a card charge.</p></div>` : ''}
     ${b.notes ? `<div class="p-sec"><h2>Notes</h2><p>${esc(b.notes)}</p></div>` : ''}
     <div class="p-sign"><div>Client signature</div><div>For ${esc(S.settings.companyName || COMPANY)}</div></div>${printFoot()}`, false, `${b.ref}-booking${b.oldRef ? '-agr-' + b.oldRef : ''}`);
