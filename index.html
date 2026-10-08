@@ -723,7 +723,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.35-2026';
+const APP_VERSION = '3.36-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -1079,7 +1079,10 @@ async function nextNo(prefix, pad3) {
   const n = await db.runTransaction(async tx => { const d = await tx.get(ref); const next = d.exists && d.data()[k] ? +d.data()[k] : 1; tx.set(ref, { [k]: next + 1 }, { merge: true }); return next; });
   return `${prefix}-${yr}-${String(n).padStart(pad3 ? 3 : 4, '0')}`;
 }
-const plateKey = p => String(p || '').replace(/\s/g, '').toUpperCase();
+/* partial plate search: digits typed are found in the plate's digits, letters in its letters */
+const plateHit = (plate, q) => { const a = plateSig(plate), b = plateSig(q); return (!b.d || a.d.includes(b.d)) && (!b.l || a.l.includes(b.l)) && !!(b.d || b.l); };
+/* plate match ignores spaces, dashes, dots and order: "14199 K", "14199-K" and "K 14199" are the same plate */
+const plateKey = p => { const s = String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); const d = (s.match(/\d+/g) || []).join(''), l = (s.match(/[A-Z]+/g) || []).join(''); return d && l ? d + l : s; };
 const phoneKey = p => { const d = String(p || '').replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : d; };
 /* agreement opened: 'Agreement no. : Client' is the main way to track it */
 const agrTitle = b => b.oldRef ? `<span class="agr-no">${esc(b.oldRef)}</span> : ${esc(b.clientName)}` : `${esc(b.ref)}, ${esc(b.clientName)}`;
@@ -2367,6 +2370,7 @@ function viewForm(id) {
         const ex = pk ? S.cars.find(c => plateKey(c.plate) === pk) : null;
         if (ex && !isSub(ex)) { $('#b-err').textContent = `Plate ${h.plate} belongs to your own car ${carTitle(ex)}. Choose it from the list instead.`; return; }
         if (ex && conflicts(ex.id, `${x.date}T${x.time}`, pu, id).length) { $('#b-err').textContent = `Sub-lease car ${h.plate} is already booked for these dates.`; return; }
+        if (ex && ex.active === false) toast(`${h.plate} is already in the system as a returned car. It has been enabled again, no duplicate added.`);
         const data = { make: h.make, model: h.model, year: h.year, color: h.color, plate: h.plate || 'TBC', supplier: h.supplier, type: 'sublease', active: true, category: ex ? ex.category || '' : '' };
         data.name = carTitle(data);
         if (ex) { batch0.update(db.doc('cars/' + ex.id), data); car = { id: ex.id, ...data }; }
@@ -2906,6 +2910,22 @@ function readCarFields(sub) {
   d.name = carTitle(d);
   return d;
 }
+/* duplicate plate: pop-up instead of a small error line */
+async function dupPlatePopup(d, id) {
+  if (!d.plate || d.plate === 'TBC') return false;
+  const dup = S.cars.find(x => x.id !== id && plateKey(x.plate) === plateKey(d.plate)); if (!dup) return false;
+  const returned = isSub(dup) && dup.active === false, own = !isSub(dup);
+  const where = own ? `your own car (${esc(OWN_LABEL[ownershipOf(dup)] || 'Owned')})` : `an external car from <strong>${esc(dup.supplier || '-')}</strong>`;
+  closeSheet();
+  if (returned) {
+    if (await ask({ title: 'Already in the system', ok: 'Enable again', text: `<strong>${esc(dup.plate)}, ${esc(carTitle(dup))}</strong> is saved as ${where}, returned to the supplier earlier.<br><br>Enable it again instead of adding a new one? Its booking history is kept${!id && isSub(d) ? ', and the details you entered are saved on it' : ''}.` })) {
+      await db.doc('cars/' + dup.id).update(!id && isSub(d) ? { ...d, active: true } : { active: true }); toast(`${dup.plate} enabled again. It is available for bookings.`); go('#/sublease');
+    }
+    return true;
+  }
+  if (await ask({ title: 'Already in the system', ok: 'Open this car', text: `Plate <strong>${esc(d.plate)}</strong> is already saved as <strong>${esc(dup.plate)}, ${esc(carTitle(dup))}</strong>, ${where}${dup.active === false ? ', currently inactive' : ''}.<br><br>A plate can only be added once.` })) go('#/car/' + dup.id);
+  return true;
+}
 function carCheck(d, id, sub) {
   if (!d.make || !d.model || !d.plate) return 'Enter the make, model and plate number.';
   if (!sub && !d.category) return 'Choose the car type (Luxury, Economy, Small…).';
@@ -2924,6 +2944,7 @@ ACT['car-edit'] = ({ id }) => {
   o.querySelector('#c-save').onclick = async () => {
     const d = readCarFields(false); d.active = $('#c-active').value === '1';
     const ext = d.type === 'sublease';
+    if (await dupPlatePopup(d, id)) return;
     const err = carCheck(d, id, ext); if (err) { $('#c-err').textContent = err; return; }
     try {
       id ? await db.doc('cars/' + id).update(d) : await db.collection('cars').add(d);
@@ -3046,8 +3067,8 @@ function viewSublease() {
   const tab = S.subTab || 'active', q = (S.subQ || '').trim();
   const subs = S.cars.filter(isSub);
   const list = subs.filter(c => (tab === 'active' ? c.active !== false : c.active === false))
-    .filter(c => !q || plateKey(c.plate).includes(plateKey(q)) || [carTitle(c), c.supplier].join(' ').toLowerCase().includes(q.toLowerCase()));
-  const other = q ? subs.filter(c => (tab === 'active' ? c.active === false : c.active !== false) && plateKey(c.plate).includes(plateKey(q))) : [];
+    .filter(c => !q || plateHit(c.plate, q) || [carTitle(c), c.supplier].join(' ').toLowerCase().includes(q.toLowerCase()));
+  const other = q ? subs.filter(c => (tab === 'active' ? c.active === false : c.active !== false) && plateHit(c.plate, q)) : [];
   const row = c => { const p = carParts(c); return `<div class="list-row"><div class="lr-top"><a href="#/car/${c.id}" style="color:inherit;text-decoration:none"><strong>${esc(p.make)} ${esc(p.model)} ${esc(p.year)}</strong> <span class="plate">${esc(c.plate)}</span></a>
       ${c.active === false ? '<span class="chip cancelled">Returned</span>' : '<span class="chip sub">Active</span>'}</div>
     <div class="lr-sub">${esc([c.color, 'Supplier: ' + (c.supplier || '-'), c.category].filter(Boolean).join(', '))}</div>
@@ -3069,14 +3090,7 @@ ACT['sub-edit'] = ({ id }) => {
     ${id && isAdmin() ? `<div class="btnrow"><button class="btn danger" data-act="car-del" data-id="${id}">Delete this car</button></div>` : ''}`);
   o.querySelector('#c-save').onclick = async () => {
     const d = readCarFields(true);
-    const ret = !id && d.plate !== 'TBC' && S.cars.find(x => isSub(x) && x.active === false && plateKey(x.plate) === plateKey(d.plate));
-    if (ret) {
-      closeSheet();
-      if (await ask({ title: `${d.plate} was returned earlier`, text: `${esc(carTitle(ret))} from ${esc(ret.supplier || '-')} is saved as returned. Enable it again with the details you entered, keeping its booking history?`, ok: 'Enable again' })) {
-        await db.doc('cars/' + ret.id).update({ ...d, active: true }); toast(`${d.plate} enabled again.`); go('#/sublease');
-      }
-      return;
-    }
+    if (await dupPlatePopup(d, id)) return;
     const err = carCheck(d, id, true); if (err) { $('#c-err').textContent = err; return; }
     try { id ? await db.doc('cars/' + id).update(d) : await db.collection('cars').add({ ...d, active: true }); closeSheet(); toast(id ? `${d.plate} saved.` : `Sub-lease ${d.plate} added.`); go('#/sublease'); }
     catch (e) { $('#c-err').textContent = friendlyError(e); }
