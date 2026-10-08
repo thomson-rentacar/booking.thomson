@@ -655,6 +655,50 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 .ch-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .ch-rm{min-height:28px!important;padding:0 9px!important;color:var(--late)!important;margin-left:4px}
 @media(max-width:520px){.ch-row{grid-template-columns:1fr 96px 36px}.ch-row input:not([type=number]){grid-column:1/-1;grid-row:2}}
+.ag-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:4px 0 12px}
+.ag-stat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);border-top:3px solid var(--c,#16324F);font:inherit;color:var(--ink);text-align:left;cursor:pointer;min-height:58px}
+.ag-stat b{font-family:var(--head);font-size:21px;font-weight:800;color:var(--c,#16324F);line-height:1.1}
+.ag-stat span{font-size:12.5px;color:var(--muted);font-weight:600}
+.ag-stat.on{background:#F1F5FB;box-shadow:inset 0 0 0 2px var(--c,#16324F)}
+.ag-stat.c-open{--c:#16324F}.ag-stat.c-day{--c:#0F7C80}.ag-stat.c-mo{--c:#6B3FB0}.ag-stat.c-due{--c:#C47A12}.ag-stat.c-late{--c:#C8372D}
+.ag-stat.c-val{cursor:default;--c:#1F5E39}.ag-stat.c-val b{font-size:17px}
+@media(max-width:520px){.ag-strip{grid-template-columns:repeat(3,1fr);gap:6px}.ag-stat{padding:8px 9px;min-height:52px}.ag-stat b{font-size:18px}.ag-stat.c-val b{font-size:13.5px}.ag-stat span{font-size:11.5px}}
+.ag-tabs{margin:0 0 10px}
+.ag-board .ag-col{display:none}
+.ag-board.tab-day .ag-all,.ag-board.tab-month .ag-all{display:none}
+.ag-board.tab-day .ag-col-d,.ag-board.tab-month .ag-col-m{display:block}
+.ag-col-h{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:12px 12px 0 0;color:#fff;margin-bottom:8px}
+.ag-col-h h2{margin:0;font-size:17px;color:#fff}
+.ag-col-h span{font-size:12.5px;font-weight:700;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px}
+.ag-col-h.h-dy{background:#0F7C80}.ag-col-h.h-mo{background:#6B3FB0}
+.ag-card{position:relative;display:block;background:#fff;border:1px solid var(--line);border-left:5px solid var(--ac);border-radius:12px;padding:11px 14px;margin-bottom:9px;color:var(--ink);text-decoration:none;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden}
+.ag-card:hover{box-shadow:0 4px 14px rgba(16,24,40,.08)}
+.ag-card.dy{--ac:#0F7C80}.ag-card.mo{--ac:#6B3FB0;background:linear-gradient(90deg,#FAF7FE,#fff 40%)}
+.ag-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ag-title{font-size:15px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.ag-amt{font-size:15px;white-space:nowrap}
+.ag-car{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:5px;font-size:14px}
+.ag-ref{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:600}
+.ag-dates{margin-top:5px;font-size:13.5px;font-weight:600}
+.ag-prog{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+.ag-bar{flex:1;height:6px;border-radius:999px;background:#E6EBF1;overflow:hidden}
+.ag-bar i{display:block;height:100%;background:var(--ac);border-radius:999px}
+.ag-foot{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:13px;font-weight:600;flex-wrap:wrap}
+.ag-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#2B8A57;vertical-align:1px}
+.st-due .ag-dot{background:#C47A12}.st-due .ag-foot>span:first-child{color:#8A5300}
+.st-late .ag-dot{background:#C8372D}.st-late .ag-foot>span:first-child{color:#B42318}.st-late{border-color:#F1C0BB;background:#FFF9F8!important}
+.st-done{background:#F6F7F9!important}.st-done>*:not(.stamp),.st-done>*:not(.stamp) *{color:#8A94A3!important}
+.st-done .ag-dot{background:#9AA3AF}.st-done .ag-bar i{background:#B7BEC8}
+.ag-stamp{color:#5B6675;top:50%;right:16px;transform:translateY(-50%) rotate(-12deg)}
+.st-done .ag-prog{display:none}
+.st-done .ag-car .ag-ref{display:none}
+.st-done .ag-top{padding-right:4px}
+@media(min-width:1000px){
+  .ag-tabs,.ag-board .ag-all{display:none!important}
+  .ag-board{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .ag-board .ag-col{display:block!important}
+  .ag-strip{grid-template-columns:repeat(6,1fr)}
+}
 </style>
 </head>
 <body>
@@ -679,7 +723,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.34-2026';
+const APP_VERSION = '3.35-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -2496,7 +2540,8 @@ function filteredRows() {
     && (F.sp === 'all' || b.salespersonId === F.sp) && (F.car === 'all' || b.carId === F.car)
     && (F.type === 'all' || (F.type === 'sub' ? b.carType === 'sublease' : F.type === 'investor' ? (S.cars.find(c => c.id === b.carId) || {}).ownership === 'investor' : F.type === 'owned' ? b.carType !== 'sublease' && (S.cars.find(c => c.id === b.carId) || {}).ownership !== 'investor' : b.carType !== 'sublease'))
     && (!F.rtype || F.rtype === 'all' || rtypeOf(b) === F.rtype)
-    && (!q || (plateSig(q).d.length >= 3 && plateSig(b.plate).d.includes(plateSig(q).d)) || [b.ref, b.oldRef, b.clientName, b.clientPhone, b.plate, b.carName, b.location, b.supplier].join(' ').toLowerCase().includes(q)));
+    && (!q || (plateSig(q).d.length >= 3 && plateSig(b.plate).d.includes(plateSig(q).d)) || [b.ref, b.oldRef, b.clientName, b.clientPhone, b.plate, b.carName, b.location, b.supplier].join(' ').toLowerCase().includes(q)))
+    .sort((a, c) => S.listKind === 'agreements' ? String(c.deliveredAt || c.deliveryAt).localeCompare(String(a.deliveredAt || a.deliveryAt)) : 0);
 }
 function rangeFor(r) {
   const t = todayStr(), y = t.slice(0, 4), m1 = t.slice(0, 8) + '01';
@@ -2522,6 +2567,53 @@ function useKind(kind) {
   else { const [from, to] = rangeFor('all'); S.filter = { from, to, range: 'open', status: 'open', sp: 'all', car: 'all', type: 'all', rtype: 'all', q: '' }; S.listRows = null; S.listFin = new Map(); S.refHits = null; }
   S.listKind = kind;
 }
+
+/* ---------- Agreements board: Daily | Monthly, newest first ---------- */
+const agStart = b => b.deliveredAt || b.deliveryAt;
+const agShort = s => s ? parseDT(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+function agState(b) {
+  if (b.status !== 'onrent') return { k: 'done', text: `Returned ${fmtDate(b.pickedUpAt || b.pickupAt)}` };
+  const now = Date.now(), end = parseDT(b.pickupAt), t = todayStr();
+  if (end < now) return { k: 'late', text: `Overdue by ${durText(now - end)}` };
+  if (b.pickupDate === t) return { k: 'due', text: `Due back today, ${time12(tOf(b.pickupAt))}` };
+  if (b.pickupDate === addDays(t, 1)) return { k: 'due', text: `Due back tomorrow, ${time12(tOf(b.pickupAt))}` };
+  const d = dayDiff(t, b.pickupDate); return { k: 'ok', text: `${d} day${d === 1 ? '' : 's'} left` };
+}
+function agCard(b) {
+  const f = S.listFin.get(b.id), mo = rtypeOf(b) === 'month', st = agState(b);
+  const start = parseDT(agStart(b)), end = parseDT(b.status === 'onrent' ? b.pickupAt : (b.pickedUpAt || b.pickupAt));
+  const total = Math.max(1, +b.days || Math.round((end - start) / 864e5) || 1);
+  const day = st.k === 'done' ? total : Math.max(1, Math.min(total, Math.ceil((Date.now() - start) / 864e5)));
+  const pct = st.k === 'done' ? 100 : Math.min(100, Math.max(3, Math.round((Date.now() - start) / Math.max(1, end - start) * 100)));
+  return `<a class="ag-card ${mo ? 'mo' : 'dy'} st-${st.k}" href="#/booking/${b.id}">
+    ${st.k === 'done' ? `<span class="stamp ag-stamp"><b>RETURNED ✓</b><i>${esc(agShort(b.pickedUpAt || b.pickupAt))}</i></span>` : ''}
+    <div class="ag-top"><strong class="ag-title">${agrTitle(b)}</strong><strong class="ag-amt num">AED ${money(bookingTotal(b, f))}</strong></div>
+    <div class="ag-car">${carLabel(b)} ${subTag(b)}<span class="ag-ref">${esc(b.ref)}</span></div>
+    <div class="ag-dates num">${esc(agShort(agStart(b)))} → ${esc(fmtDT(b.status === 'onrent' ? b.pickupAt : (b.pickedUpAt || b.pickupAt)))}</div>
+    <div class="ag-prog"><span class="ag-bar"><i style="width:${pct}%"></i></span><span class="num">${st.k === 'done' ? `${total} day${total === 1 ? '' : 's'}` : `Day ${Math.min(day, total)} of ${total}`}</span></div>
+    <div class="ag-foot"><span><span class="ag-dot"></span>${esc(st.text)}</span><span class="muted">${b.extendable ? 'Extendable · ' : ''}${esc(b.salespersonName || '')}</span></div>
+  </a>`;
+}
+function agBoardHtml(rows) {
+  const sorted = rows.slice().sort((a, c) => ((a.status === 'onrent' ? 0 : 1) - (c.status === 'onrent' ? 0 : 1)) || String(agStart(c)).localeCompare(String(agStart(a))));
+  const q = S.agQuick || '', pass = b => !q || (q === 'due' ? agState(b).k === 'due' : q === 'late' ? agState(b).k === 'late' : true);
+  const list = sorted.filter(pass), dl = list.filter(b => rtypeOf(b) !== 'month'), ml = list.filter(b => rtypeOf(b) === 'month');
+  const sum = l => money(l.reduce((s, b) => s + bookingTotal(b, S.listFin.get(b.id)), 0));
+  const open = rows.filter(b => b.status === 'onrent'), due = rows.filter(b => agState(b).k === 'due').length, late = rows.filter(b => agState(b).k === 'late').length;
+  const tab = S.agTab || 'all';
+  const chip = (k, n, l, cls) => `<button class="ag-stat ${cls} ${(k === 'day' || k === 'month' ? S.filter.rtype === k : q === k) ? 'on' : ''}" data-act="agq" data-k="${k}"><b class="num">${n}</b><span>${l}</span></button>`;
+  const colH = (cls, l, items) => `<header class="ag-col-h ${cls}"><h2>${l}</h2><span class="num">${items.length} · AED ${sum(items)}</span></header>`;
+  const empty = l => `<p class="col-empty">No ${l} agreements${q ? ' for this filter' : ''}.</p>`;
+  return `<div class="ag-strip">${chip('all', open.length, 'Open', 'c-open')}${chip('day', rows.filter(b => rtypeOf(b) !== 'month').length, 'Daily', 'c-day')}${chip('month', rows.filter(b => rtypeOf(b) === 'month').length, 'Monthly', 'c-mo')}${chip('due', due, 'Due back soon', 'c-due')}${chip('late', late, 'Overdue', 'c-late')}<div class="ag-stat c-val"><b class="num">AED ${sum(rows)}</b><span>Total value</span></div></div>
+    <div class="ag-tabs seg" role="tablist">${[['all', `All ${list.length}`], ['day', `Daily ${dl.length}`], ['month', `Monthly ${ml.length}`]].map(([k, l]) => `<button role="tab" class="${tab === k ? 'on' : ''}" data-act="agtab" data-k="${k}">${l}</button>`).join('')}</div>
+    <div class="ag-board tab-${tab}">
+      <div class="ag-all">${list.length ? list.map(agCard).join('') : empty('')}</div>
+      <section class="ag-col ag-col-d">${colH('h-dy', 'Daily', dl)}<div class="ag-list">${dl.length ? dl.map(agCard).join('') : empty('daily')}</div></section>
+      <section class="ag-col ag-col-m">${colH('h-mo', 'Monthly', ml)}<div class="ag-list">${ml.length ? ml.map(agCard).join('') : empty('monthly')}</div></section>
+    </div>`;
+}
+ACT.agtab = ({ k }) => { S.agTab = k; render(); };
+ACT.agq = ({ k }) => { if (k === 'day' || k === 'month') { S.filter.rtype = S.filter.rtype === k ? 'all' : k; S.agQuick = ''; } else if (k === 'all') { S.filter.rtype = 'all'; S.agQuick = ''; S.filter.status = 'open'; } else S.agQuick = S.agQuick === k ? '' : k; render(); };
 const viewAgreements = () => viewBookings('agreements');
 function viewBookings(kind) {
   if (!isStaff()) return deny();
@@ -2534,6 +2626,13 @@ function viewBookings(kind) {
   const rows = filteredRows();
   const total = rows.filter(b => b.status !== 'cancelled').reduce((a, b) => a + bookingTotal(b, S.listFin.get(b.id)), 0);
   const hits = (S.refHits || []).filter(h => !rows.some(r => r.id === h.id));
+  const bkPart = AG ? '' : `
+  <div class="toolbar" style="justify-content:space-between;align-items:center"><strong>${S.listRows ? `${rows.length} ${AG ? 'agreement' : 'booking'}${rows.length === 1 ? '' : 's'}, AED ${money(total)}${rows.length ? `<br><span class="muted small" style="font-weight:500">${AG ? `${rows.filter(b => b.status === 'onrent').length} open, ${rows.filter(b => b.status !== 'onrent').length} returned` : `${rows.filter(b => b.status === 'booked').length} to deliver, ${rows.filter(b => b.status === 'cancelled').length} cancelled`}${F.rtype === 'all' ? `, ${rows.filter(b => rtypeOf(b) === 'day').length} daily, ${rows.filter(b => rtypeOf(b) === 'month').length} monthly` : ''}</span>` : ''}` : 'Loading…'}</strong>
+    <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="list-reload">Refresh</button><button class="btn sm" data-act="list-csv">Excel (CSV)</button><button class="btn sm" data-act="list-print">Print PDF</button></span></div>
+  ${S.listRows && !rows.length && !hits.length ? `<div class="empty"><h3>No ${AG ? 'agreements' : 'bookings'} match these filters</h3><p>Try All time, or clear the search.</p></div>` : ''}
+  ${rows.map(listRowHtml).join('')}`;
+  const agPart = !AG ? '' : `<div class="toolbar ag-tools"><span class="muted small">${S.listRows ? `${rows.length} agreement${rows.length === 1 ? '' : 's'} · newest first` : 'Loading…'}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="list-reload">Refresh</button><button class="btn sm" data-act="list-csv">Excel (CSV)</button><button class="btn sm" data-act="list-print">Print PDF</button></span></div>
+  ${S.listRows && !rows.length && !hits.length ? `<div class="empty"><h3>No agreements match these filters</h3><p>Try All time, or clear the search.</p></div>` : ''}${S.listRows && rows.length ? agBoardHtml(rows) : ''}`;
   const html = `
   <section class="card">
     <div class="seg left wrap" role="group" aria-label="Period">${[['open', AG ? 'Open now' : 'To deliver'], ['month', 'This month'], ['last', 'Last month'], ['next', 'Next 30 days'], ['year', 'This year'], ['all', 'All time']].map(([k, l]) => `<button class="${F.range === k ? 'on' : ''}" data-act="range" data-r="${k}">${l}</button>`).join('')}</div>
@@ -2552,10 +2651,7 @@ function viewBookings(kind) {
     <p class="small muted" style="margin:8px 0 0">${AG ? 'Agreements are bookings that have been delivered. Dates filter by the start (delivery) date.' : 'Bookings are waiting for delivery. Once a car is delivered, it moves to Agreements.'} Searching a number finds it in any year.</p>
   </section>
   ${hits.length ? `<h2 class="cat-h">Found by number</h2>${hits.map(h => listRowHtml(h) + (kindOf(h) !== kind ? `<p class="small muted" style="margin:-4px 0 8px 4px">This one is in ${kindOf(h) === 'agreements' ? 'Agreements' : 'Bookings'}.</p>` : '')).join('')}` : ''}
-  <div class="toolbar" style="justify-content:space-between;align-items:center"><strong>${S.listRows ? `${rows.length} ${AG ? 'agreement' : 'booking'}${rows.length === 1 ? '' : 's'}, AED ${money(total)}${rows.length ? `<br><span class="muted small" style="font-weight:500">${AG ? `${rows.filter(b => b.status === 'onrent').length} open, ${rows.filter(b => b.status !== 'onrent').length} returned` : `${rows.filter(b => b.status === 'booked').length} to deliver, ${rows.filter(b => b.status === 'cancelled').length} cancelled`}${F.rtype === 'all' ? `, ${rows.filter(b => rtypeOf(b) === 'day').length} daily, ${rows.filter(b => rtypeOf(b) === 'month').length} monthly` : ''}</span>` : ''}` : 'Loading…'}</strong>
-    <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="list-reload">Refresh</button><button class="btn sm" data-act="list-csv">Excel (CSV)</button><button class="btn sm" data-act="list-print">Print PDF</button></span></div>
-  ${S.listRows && !rows.length && !hits.length ? `<div class="empty"><h3>No ${AG ? 'agreements' : 'bookings'} match these filters</h3><p>Try All time, or clear the search.</p></div>` : ''}
-  ${rows.map(listRowHtml).join('')}`;
+  ${AG ? agPart : bkPart}`;
   const mount = () => {
     const read = () => Object.assign(S.filter, { from: $('#f-from').value, to: $('#f-to').value, status: $('#f-st').value, sp: $('#f-sp').value, car: $('#f-car').value, type: $('#f-type').value, q: $('#f-q').value });
     const mf = $('.more-f'); if (mf) mf.addEventListener('toggle', () => { S.moreFilters = mf.open; });
@@ -2563,7 +2659,7 @@ function viewBookings(kind) {
     ['#f-st', '#f-sp', '#f-car', '#f-type'].forEach(s => $(s).addEventListener('change', () => { read(); render(); }));
     let t; $('#f-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(async () => { read(); try { await findByRef(S.filter.q); } catch (e) { S.refHits = null; } render(); const q = $('#f-q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 450); });
   };
-  return { title: AG ? 'Agreements' : 'Bookings', html, mount, form: true };
+  return { title: AG ? 'Agreements' : 'Bookings', html, mount, form: true, wide: AG };
 }
 ACT['list-reload'] = () => { S.listRows = null; render(); };
 ACT.rtype = ({ r }) => { S.filter.rtype = r; render(); };
