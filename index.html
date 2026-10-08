@@ -723,7 +723,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.38-2026';
+const APP_VERSION = '3.39-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -3092,12 +3092,18 @@ function viewSublease() {
 ACT.subtab = ({ t }) => { S.subTab = t; render(); };
 ACT['sub-edit'] = ({ id }) => {
   const c = S.cars.find(x => x.id === id) || { active: true, type: 'sublease' };
-  const o = openSheet(`<h2>${id ? 'Edit external car' : 'Add external car (sub-lease)'}</h2>${carFields(c, true)}<p class="err" id="c-err"></p>
+  const o = openSheet(`<h2>${id ? 'Edit external car' : 'Add external car (sub-lease)'}</h2>${carFields(c, true)}
+    ${id ? `<label class="f">Status<select id="c-active"><option value="1" ${c.active !== false ? 'selected' : ''}>Active, available for bookings</option><option value="0" ${c.active === false ? 'selected' : ''}>Returned to supplier (inactive), hidden from bookings</option></select></label>` : ''}<p class="err" id="c-err"></p>
     <div class="btnrow"><button class="btn" data-act="close">Go back</button><button class="btn primary" id="c-save">${id ? 'Save car' : 'Add sub-lease car'}</button></div>
     ${id && isAdmin() ? `<div class="btnrow"><button class="btn danger" data-act="car-del" data-id="${id}">Delete this car</button></div>` : ''}`);
   o.querySelector('#c-save').onclick = async () => {
     const d = readCarFields(true);
     if (await dupPlatePopup(d, id)) return;
+    if (id && $('#c-active')) {
+      d.active = $('#c-active').value === '1';
+      const busy = !d.active && c.active !== false ? [...S.active.values()].filter(b => b.carId === id && (b.status === 'booked' || b.status === 'onrent')) : [];
+      if (busy.length) { $('#c-err').textContent = `Can't return it yet: ${busy.map(b => b.oldRef || b.ref).join(', ')} still uses this car. Replace the car on those bookings first.`; return; }
+    }
     const err = carCheck(d, id, true); if (err) { $('#c-err').textContent = err; return; }
     try { id ? await db.doc('cars/' + id).update(d) : await db.collection('cars').add({ ...d, active: true }); closeSheet(); toast(id ? `${d.plate} saved.` : `Sub-lease ${d.plate} added.`); go('#/sublease'); }
     catch (e) { $('#c-err').textContent = friendlyError(e); }
