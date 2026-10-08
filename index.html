@@ -699,6 +699,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
   .ag-board .ag-col{display:block!important}
   .ag-strip{grid-template-columns:repeat(6,1fr)}
 }
+.btn.danger-soft{color:var(--late);border-color:#F1C0BB}
 </style>
 </head>
 <body>
@@ -723,7 +724,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.39-2026';
+const APP_VERSION = '3.40-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -2715,13 +2716,13 @@ function viewCarHistory(id) {
   const canEdit = c && (isAdmin() || isSub(c));
   const p = carParts(c || { name: (rows[0] || {}).carName });
   return { title: 'Car history', back: c && isSub(c) ? '#/sublease' : (isAdmin() ? '#/cars' : (S.listHash && !S.listHash.startsWith('#/car/') ? S.listHash : '#/home')), html: `<section class="card"><div class="t-top" style="justify-content:space-between"><h2 style="margin:0">${esc(p.make)} ${esc(p.model)} ${esc(p.year)}</h2>${c ? `<span class="plate">${esc(c.plate)}</span>` : ''}</div>
-    ${c ? `<p class="muted" style="margin:6px 0 10px">${esc([c.color, isSub(c) ? 'External (sub-lease) from ' + (c.supplier || '-') : OWN_LABEL[ownershipOf(c)] + (c.investor ? ': ' + c.investor : ''), c.category].filter(Boolean).join(', '))}${c.sold ? `, <strong>sold on ${esc(fmtDate(c.sold.date))}</strong>${c.sold.to ? ` to ${esc(c.sold.to)}` : ''}${c.sold.price ? `, AED ${money(c.sold.price)}` : ''}` : c.active === false ? `, <strong>${isSub(c) ? 'returned to supplier' : 'inactive'}</strong>` : ''}</p>` : ''}
+    ${c ? `<p class="muted" style="margin:6px 0 10px">${esc([c.color, isSub(c) ? 'External (sub-lease) from ' + (c.supplier || '-') : OWN_LABEL[ownershipOf(c)] + (c.investor ? ': ' + c.investor : ''), c.category].filter(Boolean).join(', '))}${c.sold ? `, <strong>sold on ${esc(fmtDate(c.sold.date))}</strong>${c.sold.to ? ` to ${esc(c.sold.to)}` : ''}${c.sold.price ? `, AED ${money(c.sold.price)}` : ''}` : c.active === false ? `, <strong>${isSub(c) ? (c.retired ? 'inactive permanently' : 'returned to supplier') : 'inactive'}</strong>` : ''}</p>` : ''}
     ${c && !isSub(c) ? `<div class="exp-cells" style="margin:0 0 10px">${[['Registration', c.regExpiry], ['Insurance', c.insExpiry]].map(([l, d]) => { const s = expState(d); return `<span class="exp-cell ${s ? s.k : 'none'}">${l}: <strong>${d ? esc(fmtDate(d)) : 'not set'}</strong>${s && s.k !== 'ok' ? ` <em>${esc(expText(s))}</em>` : ''}</span>`; }).join('')}</div>` : ''}
     ${c && !isSub(c) && canRenew() ? `<div class="t-actions" style="margin:0 0 10px"><button class="btn sm" data-act="renew" data-car="${c.id}" data-what="Registration">Renew registration</button><button class="btn sm" data-act="renew" data-car="${c.id}" data-what="Insurance">Renew insurance</button></div>` : ''}
     ${c && (c.renewals || []).length ? `<details class="more-f" style="margin:0 0 10px"><summary>Renewal history (${c.renewals.length})</summary>${c.renewals.slice().reverse().map(r => `<div class="small" style="padding:4px 0">${esc(r.what)}: ${r.from ? esc(fmtDate(r.from)) + ' → ' : ''}<strong>${esc(fmtDate(r.to))}</strong>, ${esc(r.by)}, ${esc(fmtDT(r.at))}</div>`).join('')}</details>` : ''}
     ${histSummary(rows, fin)}
     ${c && inGarage(c.id) ? (g0 => `<div class="warn">${isNrm(g0) ? `On NRM: ${esc(g0.purpose)} with ${esc(g0.staff || '-')}` : `In the garage: ${esc(g0.purpose)} at ${esc(g0.garage)}`} since ${esc(fmtDT(g0.inAt))} (${esc(g0.no)})</div>`)(inGarage(c.id)) : ''}
-    <div class="btnrow">${canEdit ? `<button class="btn" data-act="${isSub(c) ? 'sub-edit' : 'car-edit'}" data-id="${c.id}">Edit car</button>${isSub(c) ? `<button class="btn" data-act="sub-toggle" data-id="${c.id}">${c.active === false ? 'Enable again' : 'Return to supplier'}</button>` : isAdmin() ? (c.sold ? `<button class="btn" data-act="car-unsold" data-id="${c.id}">Undo sold</button>` : `<button class="btn" data-act="car-active" data-id="${c.id}">${c.active === false ? 'Make active' : 'Make inactive'}</button><button class="btn danger" data-act="car-sold" data-id="${c.id}">Mark as sold</button>`) : ''}` : ''}
+    <div class="btnrow">${canEdit ? `<button class="btn" data-act="${isSub(c) ? 'sub-edit' : 'car-edit'}" data-id="${c.id}">Edit car</button>${isSub(c) ? `<button class="btn" data-act="sub-toggle" data-id="${c.id}">${c.active === false ? 'Enable again' : 'Return to supplier'}</button>${c.retired ? '' : `<button class="btn danger" data-act="sub-retire" data-id="${c.id}">Mark inactive</button>`}` : isAdmin() ? (c.sold ? `<button class="btn" data-act="car-unsold" data-id="${c.id}">Undo sold</button>` : `<button class="btn" data-act="car-active" data-id="${c.id}">${c.active === false ? 'Make active' : 'Make inactive'}</button><button class="btn danger" data-act="car-sold" data-id="${c.id}">Mark as sold</button>`) : ''}` : ''}
       ${c && c.active !== false ? (inGarage(c.id) ? (isNrm(inGarage(c.id)) ? `<button class="btn good" data-act="nrmback" data-car="${c.id}">Back from NRM</button>` : `<button class="btn good" data-act="garageout" data-car="${c.id}">Back from garage</button>`) : `<button class="btn" data-act="garagein" data-car="${c.id}">Send to garage</button><button class="btn" data-act="nrmstart" data-car="${c.id}">Start NRM</button>`) : ''}</div></section>
     ${(S.hist.garage || []).filter(g => !isNrm(g)).length ? `<h2 class="cat-h">Garage visits (${S.hist.garage.filter(g => !isNrm(g)).length})</h2>${S.hist.garage.filter(g => !isNrm(g)).map(garageRow).join('')}` : ''}
     ${(S.hist.garage || []).filter(isNrm).length ? `<h2 class="cat-h">NRM, staff use (${S.hist.garage.filter(isNrm).length})</h2>${S.hist.garage.filter(isNrm).map(nrmRow).join('')}` : ''}
@@ -2924,8 +2925,8 @@ async function dupPlatePopup(d, id) {
   const where = own ? `your own car (${esc(OWN_LABEL[ownershipOf(dup)] || 'Owned')})` : `an external car from <strong>${esc(dup.supplier || '-')}</strong>`;
   closeSheet();
   if (returned) {
-    if (await ask({ title: 'Already in the system', ok: 'Enable again', text: `<strong>${esc(dup.plate)}, ${esc(carTitle(dup))}</strong> is saved as ${where}, returned to the supplier earlier.<br><br>Enable it again instead of adding a new one? Its booking history is kept${!id && isSub(d) ? ', and the details you entered are saved on it' : ''}.` })) {
-      await db.doc('cars/' + dup.id).update(!id && isSub(d) ? { ...d, active: true } : { active: true }); toast(`${dup.plate} enabled again. It is available for bookings.`); go('#/sublease');
+    if (await ask({ title: 'Already in the system', ok: 'Enable again', text: `<strong>${esc(dup.plate)}, ${esc(carTitle(dup))}</strong> is saved as ${where}, ${dup.retired ? 'marked inactive' : 'returned to the supplier'} earlier.<br><br>Enable it again instead of adding a new one? Its booking history is kept${!id && isSub(d) ? ', and the details you entered are saved on it' : ''}.` })) {
+      await db.doc('cars/' + dup.id).update(!id && isSub(d) ? { ...d, active: true, retired: false } : { active: true, retired: false }); toast(`${dup.plate} enabled again. It is available for bookings.`); go('#/sublease');
     }
     return true;
   }
@@ -2952,6 +2953,7 @@ ACT['car-edit'] = ({ id }) => {
     const d = readCarFields(false); d.active = $('#c-active') ? $('#c-active').value === '1' : false;
     const ext = d.type === 'sublease';
     if (await dupPlatePopup(d, id)) return;
+    if (id && !d.active && c.active !== false && !(await freeCheck(id, 'make it inactive'))) return;
     const err = carCheck(d, id, ext); if (err) { $('#c-err').textContent = err; return; }
     try {
       id ? await db.doc('cars/' + id).update(d) : await db.collection('cars').add(d);
@@ -3073,19 +3075,21 @@ ACT['car-bulk'] = () => {
 function viewSublease() {
   const tab = S.subTab || 'active', q = (S.subQ || '').trim();
   const subs = S.cars.filter(isSub);
-  const list = subs.filter(c => (tab === 'active' ? c.active !== false : c.active === false))
+  const stOf = c => c.retired ? 'inactive' : c.active === false ? 'returned' : 'active';
+  const TABN = { active: 'Active', returned: 'Returned', inactive: 'Inactive' };
+  const list = subs.filter(c => stOf(c) === tab)
     .filter(c => !q || plateHit(c.plate, q) || [carTitle(c), c.supplier].join(' ').toLowerCase().includes(q.toLowerCase()));
-  const other = q ? subs.filter(c => (tab === 'active' ? c.active === false : c.active !== false) && plateHit(c.plate, q)) : [];
+  const other = q ? subs.filter(c => stOf(c) !== tab && plateHit(c.plate, q)) : [];
   const row = c => { const p = carParts(c); return `<div class="list-row"><div class="lr-top"><a href="#/car/${c.id}" style="color:inherit;text-decoration:none"><strong>${esc(p.make)} ${esc(p.model)} ${esc(p.year)}</strong> <span class="plate">${esc(c.plate)}</span></a>
-      ${c.active === false ? '<span class="chip cancelled">Returned</span>' : '<span class="chip sub">Active</span>'}</div>
+      ${c.retired ? '<span class="chip cancelled">Inactive</span>' : c.active === false ? '<span class="chip cancelled">Returned</span>' : '<span class="chip sub">Active</span>'}</div>
     <div class="lr-sub">${esc([c.color, 'Supplier: ' + (c.supplier || '-'), c.category].filter(Boolean).join(', '))}</div>
     <div class="t-actions"><a class="btn sm" href="#/car/${c.id}">History</a><button class="btn sm" data-act="sub-edit" data-id="${c.id}">Edit</button>
-      <button class="btn sm ${c.active === false ? 'good' : ''}" data-act="sub-toggle" data-id="${c.id}">${c.active === false ? 'Enable again' : 'Return to supplier'}</button></div></div>`; };
+      <button class="btn sm ${c.active === false ? 'good' : ''}" data-act="sub-toggle" data-id="${c.id}">${c.active === false ? 'Enable again' : 'Return to supplier'}</button>${c.retired ? '' : `<button class="btn sm danger-soft" data-act="sub-retire" data-id="${c.id}">Mark inactive</button>`}</div></div>`; };
   const html = `<div class="toolbar"><button class="btn primary" data-act="sub-edit">Add external car</button></div>
-    <div class="seg left" role="group" aria-label="Show">${[['active', `Active ${subs.filter(c => c.active !== false).length}`], ['returned', `Returned ${subs.filter(c => c.active === false).length}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="subtab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="seg left" role="group" aria-label="Show">${[['active', `Active ${subs.filter(c => stOf(c) === 'active').length}`], ['returned', `Returned ${subs.filter(c => stOf(c) === 'returned').length}`], ['inactive', `Inactive ${subs.filter(c => stOf(c) === 'inactive').length}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="subtab" data-t="${k}">${l}</button>`).join('')}</div>
     <label class="f">Search by plate, car or supplier<input id="sub-q" type="search" value="${esc(q)}" placeholder="9185"></label>
-    ${other.length ? `<div class="strip info"><h3>Also found in ${tab === 'active' ? 'Returned' : 'Active'}</h3>${other.map(row).join('')}</div>` : ''}
-    ${list.length ? list.map(row).join('') : `<div class="empty"><h3>${q ? 'No sub-lease car matches this search' : tab === 'active' ? 'No sub-lease cars with you right now' : 'No returned sub-lease cars yet'}</h3><p>${tab === 'active' ? 'Add a car you rent from a supplier, or use Sub-lease hire while making a booking.' : 'Cars you return to the supplier are kept here, so you can enable them again later.'}</p></div>`}`;
+    ${other.length ? `<div class="strip info"><h3>Also found in other tabs</h3>${other.map(row).join('')}</div>` : ''}
+    ${list.length ? list.map(row).join('') : `<div class="empty"><h3>${q ? 'No sub-lease car matches this search' : tab === 'active' ? 'No sub-lease cars with you right now' : tab === 'returned' ? 'No returned sub-lease cars yet' : 'No inactive sub-lease cars'}</h3><p>${tab === 'active' ? 'Add a car you rent from a supplier, or use Sub-lease hire while making a booking.' : tab === 'returned' ? 'Cars you return to the supplier are kept here, so you can enable them again later.' : 'Cars you will not use again. Their history is kept.'}</p></div>`}`;
   const mount = () => { let t; $('#sub-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { S.subQ = e.target.value; render(); const i = $('#sub-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 350); }); };
   return { title: 'External cars (sub-lease)', back: '#/more', html, mount };
 }
@@ -3093,30 +3097,35 @@ ACT.subtab = ({ t }) => { S.subTab = t; render(); };
 ACT['sub-edit'] = ({ id }) => {
   const c = S.cars.find(x => x.id === id) || { active: true, type: 'sublease' };
   const o = openSheet(`<h2>${id ? 'Edit external car' : 'Add external car (sub-lease)'}</h2>${carFields(c, true)}
-    ${id ? `<label class="f">Status<select id="c-active"><option value="1" ${c.active !== false ? 'selected' : ''}>Active, available for bookings</option><option value="0" ${c.active === false ? 'selected' : ''}>Returned to supplier (inactive), hidden from bookings</option></select></label>` : ''}<p class="err" id="c-err"></p>
+    ${id ? `<label class="f">Status<select id="c-active"><option value="1" ${c.active !== false ? 'selected' : ''}>Active, available for bookings</option><option value="0" ${c.active === false && !c.retired ? 'selected' : ''}>Returned to supplier (may come back)</option><option value="x" ${c.retired ? 'selected' : ''}>Inactive permanently (won't use again)</option></select></label>` : ''}<p class="err" id="c-err"></p>
     <div class="btnrow"><button class="btn" data-act="close">Go back</button><button class="btn primary" id="c-save">${id ? 'Save car' : 'Add sub-lease car'}</button></div>
     ${id && isAdmin() ? `<div class="btnrow"><button class="btn danger" data-act="car-del" data-id="${id}">Delete this car</button></div>` : ''}`);
   o.querySelector('#c-save').onclick = async () => {
     const d = readCarFields(true);
     if (await dupPlatePopup(d, id)) return;
     if (id && $('#c-active')) {
-      d.active = $('#c-active').value === '1';
-      const busy = !d.active && c.active !== false ? [...S.active.values()].filter(b => b.carId === id && (b.status === 'booked' || b.status === 'onrent')) : [];
-      if (busy.length) { $('#c-err').textContent = `Can't return it yet: ${busy.map(b => b.oldRef || b.ref).join(', ')} still uses this car. Replace the car on those bookings first.`; return; }
+      const sv = $('#c-active').value; d.active = sv === '1'; d.retired = sv === 'x';
+      if (!d.active && c.active !== false && !(await freeCheck(id, sv === 'x' ? 'mark it inactive' : 'return it to the supplier'))) return;
     }
     const err = carCheck(d, id, true); if (err) { $('#c-err').textContent = err; return; }
     try { id ? await db.doc('cars/' + id).update(d) : await db.collection('cars').add({ ...d, active: true }); closeSheet(); toast(id ? `${d.plate} saved.` : `Sub-lease ${d.plate} added.`); go('#/sublease'); }
     catch (e) { $('#c-err').textContent = friendlyError(e); }
   };
 };
+ACT['sub-retire'] = async ({ id }) => {
+  const c = S.cars.find(x => x.id === id); if (!c) return;
+  if (!(await freeCheck(id, 'mark it inactive'))) return;
+  if (!(await ask({ title: `Mark ${c.plate} inactive permanently?`, ok: 'Mark inactive', text: `${esc(carTitle(c))} from ${esc(c.supplier || '-')} moves to the <strong>Inactive</strong> tab and won't be offered for bookings. Its history is kept, and you can still enable it again later if needed.` }))) return;
+  await db.doc('cars/' + id).update({ active: false, retired: true }); c.active = false; c.retired = true;
+  toast(`${c.plate} marked inactive.`); render();
+};
 ACT['sub-toggle'] = async ({ id }) => {
   const c = S.cars.find(x => x.id === id); if (!c) return;
   if (c.active !== false) {
-    const busy = [...S.active.values()].filter(b => b.carId === id && (b.status === 'booked' || b.status === 'onrent'));
-    if (busy.length) { toast(`Can't return yet: ${busy.map(b => b.ref).join(', ')} still uses this car.`); return; }
+    if (!(await freeCheck(id, 'return it to the supplier'))) return;
     if (!(await ask({ title: `Return ${carTitle(c)} ${c.plate}?`, text: `It will be hidden from bookings and the available list. Its history stays, and you can enable it again by searching the plate.`, ok: 'Return to supplier' }))) return;
   }
-  await db.doc('cars/' + id).update({ active: c.active === false });
+  await db.doc('cars/' + id).update(c.active === false ? { active: true, retired: false } : { active: false });
   toast(c.active === false ? `${c.plate} enabled again. It is available for bookings.` : `${c.plate} returned to supplier.`);
   if (S.route === 'car') go('#/sublease');
 };
@@ -3664,21 +3673,34 @@ ACT['car-del'] = async ({ id }) => {
 
 /* own car status: inactive, sold */
 ACT.cartab = ({ k }) => { S.carTab = k; render(); };
-const carBusy = id => [...S.active.values()].filter(b => (b.carId === id || (b.carIds || []).includes(id)) && (b.status === 'booked' || b.status === 'onrent'));
+const carBusy = id => [...S.active.values()].filter(b => b.carId === id && (b.status === 'booked' || b.status === 'onrent')).sort((a, c) => a.deliveryAt.localeCompare(c.deliveryAt));
+/* a car must be free (no open agreement, no upcoming booking) before garage, NRM, inactive, return to supplier or sold */
+async function freeCheck(id, what) {
+  const busy = carBusy(id); if (!busy.length) return true;
+  const c = S.cars.find(x => x.id === id) || {};
+  openSheet(`<h2>Car is not free yet</h2>
+    <p style="margin:4px 0 0"><span class="plate big">${esc(c.plate || '')}</span> ${esc(carTitle(c))}</p>
+    <p class="muted" style="margin:8px 0 0">Before you ${esc(what)}, ${busy.length === 1 ? 'this needs' : 'these need'} to be closed or moved to another car:</p>
+    ${busy.map(b => `<div class="alert-row ${b.status === 'onrent' ? 'late' : ''}" style="margin-top:8px"><strong>${b.oldRef ? agrTitle(b) : esc(b.ref + ', ' + b.clientName)}</strong>
+      <span>${b.status === 'onrent' ? `Open agreement: car with client, due back ${esc(fmtDT(b.pickupAt))}` : `Booking: ${esc(fmtDT(b.deliveryAt))} → ${esc(fmtDT(b.pickupAt))}`}</span>
+      <span class="t-actions" style="margin-top:6px"><a class="btn sm" href="#/booking/${b.id}">Open</a><button class="btn sm" data-act="replace" data-id="${b.id}">Replace car</button>${b.status === 'onrent' ? `<button class="btn sm good" data-act="done" data-id="${b.id}" data-type="pickup">Mark picked up</button>` : `<a class="btn sm" href="#/edit/${b.id}">Edit booking</a>`}</span></div>`).join('')}
+    <p class="small muted" style="margin:10px 0 0">Close the agreement (Mark picked up), or use Replace car to move it to another car, then try again.</p>
+    <div class="btnrow"><button class="btn primary" data-act="close">OK</button></div>`);
+  return false;
+}
 ACT['car-active'] = async ({ id }) => {
   const c = S.cars.find(x => x.id === id); if (!c) return;
   const on = c.active === false;
   if (!on) {
-    const busy = carBusy(id);
-    if (!(await ask({ title: `Make ${c.plate} inactive?`, ok: 'Make inactive', text: `It will be hidden from new bookings, the available list and the WhatsApp list until you make it active again.${busy.length ? `<br><br><strong>Still on ${busy.length} booking${busy.length === 1 ? '' : 's'}:</strong> ${busy.map(b => esc(b.oldRef || b.ref)).join(', ')}. Those stay as they are.` : ''}` }))) return;
+    if (!(await freeCheck(id, 'make it inactive'))) return;
+    if (!(await ask({ title: `Make ${c.plate} inactive?`, ok: 'Make inactive', text: 'It will be hidden from new bookings, the available list and the WhatsApp list until you make it active again.' }))) return;
   }
   await db.doc('cars/' + id).update({ active: on }); c.active = on;
   toast(on ? `${c.plate} is active again.` : `${c.plate} is now inactive.`); render();
 };
 ACT['car-sold'] = async ({ id }) => {
   const c = S.cars.find(x => x.id === id); if (!c) return;
-  const busy = carBusy(id);
-  if (busy.length) { await ask({ title: `${c.plate} still has bookings`, ok: 'OK', text: `Move or close these first, then mark the car as sold:<br><br>${busy.map(b => `${esc(b.oldRef ? b.oldRef + ' : ' + b.clientName : b.ref + ', ' + b.clientName)} (${b.status === 'onrent' ? 'car with client' : 'to deliver ' + esc(fmtDate(b.deliveryDate))})`).join('<br>')}<br><br>Use <strong>Replace car</strong> or <strong>Edit booking</strong> to switch them to another car.` }); return; }
+  if (!(await freeCheck(id, 'mark it as sold'))) return;
   const o = openSheet(`<h2>Mark as sold</h2><p class="muted" style="margin:4px 0 0"><span class="plate big">${esc(c.plate)}</span> ${esc(carTitle(c))}</p>
     <div class="grid2"><label class="f">Sold on<input type="date" id="sd-date" value="${todayStr()}"></label><label class="f">Sale price (AED, optional)<input id="sd-price" type="number" inputmode="decimal" min="0" step="0.01"></label></div>
     <label class="f">Sold to (optional)<input id="sd-to" placeholder="Buyer or dealer"></label>
@@ -3856,7 +3878,8 @@ ACT.replace = async ({ id }) => {
 };
 
 /* ---------- garage in and out ---------- */
-ACT.garagein = ({ car }) => {
+ACT.garagein = async ({ car }) => {
+  if (car && !(await freeCheck(car, 'send it to the garage'))) return;
   const pre = car ? S.cars.find(c => c.id === car) : null;
   const now = nowLocal();
   const o = openSheet(`<h2>Send to garage</h2>
@@ -3888,7 +3911,7 @@ ACT.garagein = ({ car }) => {
   o.querySelector('#gi-save').onclick = async ev => {
     const id = carId(), c = S.cars.find(x => x.id === id), g = garageRead('gi');
     if (!c) { $('#gi-err').textContent = 'Choose the car.'; return; }
-    if (check() === 'onrent') { $('#gi-err').textContent = 'This car is on rent. Replace it on the booking first.'; return; }
+    if (!(await freeCheck(id, 'send it to the garage'))) return;
     if (!g.garage) { $('#gi-err').textContent = 'Enter the garage name.'; return; }
     ev.target.disabled = true;
     try {
@@ -3961,7 +3984,8 @@ function nrmRow(g) {
     <div class="lr-sub">KM out ${esc(g.startKm || '-')}${g.endKm ? `, KM back ${esc(g.endKm)}${km != null && km >= 0 ? ` (${km} km)` : ''}` : ''}${g.remarks ? `. ${esc(g.remarks)}` : ''}${g.outNotes ? `. ${esc(g.outNotes)}` : ''}</div>
     <div class="t-actions"><a class="btn sm" href="#/car/${g.carId}">Car history</a>${g.status === 'open' ? `<button class="btn sm good" data-act="nrmback" data-car="${g.carId}">Back from NRM</button>` : ''}</div></div>`;
 }
-ACT.nrmstart = ({ car }) => {
+ACT.nrmstart = async ({ car }) => {
+  if (car && !(await freeCheck(car, 'start NRM'))) return;
   const pre = car ? S.cars.find(c => c.id === car) : null, now = nowLocal();
   const o = openSheet(`<h2>Start NRM, no revenue</h2><p class="small muted" style="margin:2px 0 0">The car is taken out of the available list until it's back.</p>
     ${pre ? `<p style="margin:8px 0 0"><span class="plate big">${esc(pre.plate)}</span> ${esc(carTitle(pre))}</p>` : `<label class="f">Type plate<input id="n-pq" autocomplete="off" autocapitalize="characters" placeholder="9185"></label>
@@ -3993,7 +4017,7 @@ ACT.nrmstart = ({ car }) => {
   o.querySelector('#n-save').onclick = async ev => {
     const id = carId(), c = S.cars.find(x => x.id === id), staff = $('#n-staff').value.trim();
     if (!c) { $('#n-err').textContent = 'Choose the car.'; return; }
-    if (check() === 'onrent') { $('#n-err').textContent = 'This car is on rent.'; return; }
+    if (!(await freeCheck(id, 'start NRM'))) return;
     if (!staff) { $('#n-err').textContent = 'Enter who is using the car.'; return; }
     ev.target.disabled = true;
     try {
