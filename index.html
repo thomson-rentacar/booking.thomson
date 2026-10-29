@@ -453,7 +453,7 @@ label.check input{width:20px;height:20px}
 @media (prefers-reduced-motion:reduce){.pdf-spin{animation:none}}
 .credit{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:13px;color:var(--muted);margin:18px 0 8px}
 .credit strong{color:var(--ink);font-size:14px}
-#splash{position:fixed;inset:0;z-index:100;background:#fff;color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;overflow:hidden;transition:opacity .6s ease,transform .6s ease}
+#splash{position:fixed;inset:0;z-index:100;background:#fff;color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;overflow:hidden;transition:opacity .4s ease,transform .4s ease}
 #splash.hide{opacity:0;transform:scale(1.03);pointer-events:none}
 #splash::before,#splash::after{content:"";position:absolute;left:0;right:0;height:4px;background:linear-gradient(90deg,#8A6A26,#E2C27A,#8A6A26)}#splash::before{top:0}#splash::after{bottom:0}
 .sp-in{display:flex;flex-direction:column;align-items:center;gap:10px;animation:spIn .7s ease both}
@@ -703,21 +703,21 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 .btn.danger-soft{color:var(--late);border-color:#F1C0BB}
 
 /* ---- welcome screen: logo, then the words slide in one by one ---- */
-.sp-glow{position:absolute;width:min(900px,140vw);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(201,160,72,.10),rgba(201,160,72,0) 60%);top:50%;left:50%;transform:translate(-50%,-58%);animation:spGlow 2.4s ease-out both;pointer-events:none}
+.sp-glow{position:absolute;width:min(900px,140vw);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(201,160,72,.10),rgba(201,160,72,0) 60%);top:50%;left:50%;transform:translate(-50%,-58%);animation:spGlow 1.4s ease-out both;pointer-events:none}
 #splash .sp-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;animation:none;width:100%}
-#splash .sp-logo{position:relative;overflow:hidden;animation:spLogo 1s cubic-bezier(.2,.8,.2,1) both}
+#splash .sp-logo{position:relative;overflow:hidden;animation:spLogo .6s cubic-bezier(.2,.8,.2,1) both}
 #splash .sp-logo img{display:block;width:min(560px,84vw);max-width:none;max-height:none;height:auto;background:none;padding:0;border-radius:0}
-#splash .sp-logo::after{content:"";position:absolute;inset:-10% auto -10% -60%;width:40%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.75),rgba(255,255,255,0));transform:skewX(-18deg);animation:spShine 1.1s ease-in-out .9s both;pointer-events:none}
+#splash .sp-logo::after{content:"";position:absolute;inset:-10% auto -10% -60%;width:40%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.75),rgba(255,255,255,0));transform:skewX(-18deg);animation:spShine .8s ease-in-out .5s both;pointer-events:none}
 #splash .sp-logo .wordmark{background:var(--navy);color:#fff}
 .sp-welcome{margin:clamp(18px,4vh,34px) 0 4px;overflow:hidden;font-size:clamp(14px,3.6vw,18px);letter-spacing:.32em;text-transform:uppercase;color:#9A7A33;font-weight:700}
-.sp-welcome span{display:inline-block;animation:spUp .7s cubic-bezier(.2,.8,.2,1) .75s both}
+.sp-welcome span{display:inline-block;animation:spUp .5s cubic-bezier(.2,.8,.2,1) .35s both}
 #splash .sp-title{font-family:var(--head);font-stretch:104%;font-weight:800;font-size:clamp(26px,7.4vw,52px);line-height:1.15;margin:0;color:var(--navy);max-width:min(900px,94vw);text-wrap:balance}
 .sp-w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:0 .02em .06em}
-.sp-w>span{display:inline-block;animation:spWord .75s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(1.05s + var(--i) * .16s)}
-.sp-line{width:min(220px,50vw);height:3px;margin-top:clamp(16px,3vh,24px);border-radius:3px;background:linear-gradient(90deg,rgba(201,160,72,0),#C9A048,rgba(201,160,72,0));transform:scaleX(0);animation:spLine .8s ease-out 1.9s both}
-#splash .sp-road{margin-top:22px;background:rgba(22,50,79,.10);opacity:0;animation:spFade .5s ease 2.2s both}
+.sp-w>span{display:inline-block;animation:spWord .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(.55s + var(--i) * .1s)}
+.sp-line{width:min(220px,50vw);height:3px;margin-top:clamp(16px,3vh,24px);border-radius:3px;background:linear-gradient(90deg,rgba(201,160,72,0),#C9A048,rgba(201,160,72,0));transform:scaleX(0);animation:spLine .5s ease-out 1.05s both}
+#splash .sp-road{margin-top:22px;background:rgba(22,50,79,.10);opacity:0;animation:spFade .4s ease 1.2s both}
 #splash .sp-road span{background:repeating-linear-gradient(90deg,#C9A048 0 18px,transparent 18px 30px)}
-#splash .sp-foot{color:#8A7A5C;opacity:0;animation:spFade .6s ease 2.3s both}
+#splash .sp-foot{color:#8A7A5C;opacity:0;animation:spFade .4s ease 1.2s both}
 @keyframes spLogo{from{opacity:0;transform:scale(.86) translateY(14px)}to{opacity:1;transform:none}}
 @keyframes spShine{from{left:-60%}to{left:120%}}
 @keyframes spUp{from{transform:translateY(110%);opacity:0}to{transform:none;opacity:1}}
@@ -799,6 +799,61 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 .auth .skyline>rect{fill:#CBD6E4}
 .auth .skyline>path{stroke:#C9A048}
 .auth-card{border:1px solid #DCE3EC!important}
+
+/* splash waits for the logo before animating */
+#splash:not(.go) *,#splash:not(.go)::before,#splash:not(.go)::after{animation-play-state:paused!important}
+/* logo keeps its shape while loading, never cut in half */
+img.logo,.p-logo,#splash .sp-logo img{aspect-ratio:900/307;object-fit:contain}
+.hero-top{min-width:0}
+.hero-top .logo{flex:none}
+
+/* ===== booking / agreement page: document style ===== */
+.dv-wrap{max-width:980px;margin:0 auto}
+.dv{background:#fff;border:1px solid #E3E8EE;border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.06);overflow:hidden;margin-bottom:14px}
+.dv-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px 14px;border-bottom:2px solid var(--navy)}
+.dv-brand{flex:none}.dv-logo{display:block;width:clamp(120px,30vw,230px);height:auto;aspect-ratio:900/307}
+.dv-id{text-align:right;min-width:0}
+.dv-eye{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A26;font-weight:800}
+.dv-no{font-family:var(--head);font-size:clamp(24px,6vw,32px);font-weight:800;color:var(--navy);line-height:1.1;margin-top:2px}
+.dv-ref{font-size:12.5px;color:var(--muted);margin-top:2px}
+.dv-chips{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
+.dv-st{margin-top:7px;font-size:13px;font-weight:700;color:#1F6B3A}
+.dv-st.dvk-due{color:#8A5300}.dv-st.dvk-late{color:#B42318}.dv-st.dvk-done{color:var(--muted)}
+.dv-st.dvk-due .ag-dot{background:#C47A12}.dv-st.dvk-late .ag-dot{background:#C8372D}.dv-st.dvk-done .ag-dot{background:#9AA3AF}
+.dv-band{display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;padding:9px 22px;background:linear-gradient(90deg,#F7F1E4,#FBF8F1);border-bottom:1px solid #E9DDC2;font-size:13.5px}
+.dv-band b{color:var(--navy)}
+.dv-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.dv-sec{padding:14px 22px 4px}
+.dv-sec h3{margin:0 0 8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A26;font-weight:800;border-bottom:1px solid #EFE6D2;padding-bottom:5px}
+.dv-kv{display:grid;grid-template-columns:110px 1fr;gap:7px 12px;margin:0 0 10px;font-size:14.5px}
+.dv-kv dt{color:var(--muted);font-size:13px;padding-top:2px}.dv-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.dv-big{font-size:16px;font-weight:800;color:var(--navy)}
+.dv-miss{color:#B42318;font-weight:600}
+.dv-period{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#F7F9FC;border:1px solid #E3E8EE;border-radius:12px;padding:12px 16px;margin:2px 0 10px}
+.dv-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.dv-dt{font-size:16.5px;font-weight:800;color:var(--navy)}
+.dv-mid{text-align:center;font-size:12.5px;color:var(--muted)}.dv-mid b{display:block;font-size:20px;color:var(--ink)}
+.dv-r{text-align:right}
+.dv-bar{height:6px;border-radius:9px;background:#E6EBF1;margin:0 0 12px;overflow:hidden}.dv-bar i{display:block;height:100%;background:#0F7C80;border-radius:9px}.dv-bar.mo i{background:#6B3FB0}
+.dv-tbl{width:100%;border-collapse:collapse;font-size:14px;margin:2px 0 4px}
+.dv-tbl th{background:var(--navy);color:#fff;text-align:left;font-size:11.5px;letter-spacing:.04em;padding:7px 10px;font-weight:700}
+.dv-tbl td{padding:8px 10px;border-bottom:1px solid #E8ECF1;vertical-align:top}.dv-tbl .r{text-align:right;white-space:nowrap}
+.dv-tbl tr.dv-tot td{font-weight:800;background:#F6F1E4;border-top:1.5px solid #C9A048}
+.dv-tbl tr.dv-pay td{color:var(--ink)}
+.dv-tbl tr.dv-bal td{font-size:15.5px;font-weight:800;color:var(--navy);border-top:2px solid var(--navy);border-bottom:none}
+.dv-sub{margin:14px 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dv-acts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 22px 18px;border-top:1px solid #EEF1F5;background:#FBFCFD;margin-top:8px}
+.dv-acts .btn{flex:0 0 auto}
+@media(max-width:640px){
+  .dv-head{padding:14px 14px 12px;gap:10px;align-items:flex-start}
+  .dv-band,.dv-sec,.dv-acts{padding-left:14px;padding-right:14px}
+  .dv-band{display:none}
+  .dv-grid{grid-template-columns:1fr}
+  .dv-kv{grid-template-columns:92px 1fr;font-size:14px}
+  .dv-period{grid-template-columns:1fr;gap:6px;text-align:left}.dv-mid{text-align:left}.dv-mid b{display:inline;font-size:15px;margin-right:4px}.dv-r{text-align:left}
+  .dv-tbl{font-size:13px}.dv-tbl th,.dv-tbl td{padding:7px 6px}
+  .dv-acts .btn{flex:1 1 calc(50% - 8px)}
+}
 </style>
 </head>
 <body>
@@ -817,6 +872,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 <div id="toast" aria-live="polite"></div>
 <div id="print"></div>
 <script src="config.js"></script>
+<script>if(window.LOGO_URL){var _pl=document.createElement("link");_pl.rel="preload";_pl.as="image";_pl.href=window.LOGO_URL;document.head.appendChild(_pl);window._logoImg=new Image();window._logoImg.src=window.LOGO_URL;}</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -825,7 +881,7 @@ input.missing,select.missing,textarea.missing{border-color:#E4A94A!important;bac
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.44-2026';
+const APP_VERSION = '3.46-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -1004,14 +1060,17 @@ const SPLASH_T0 = Date.now();
 function hideSplash() {
   const el = document.getElementById('splash'); if (!el || el.dataset.hiding) return;
   el.dataset.hiding = '1';
-  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 700); }, Math.max(0, (matchMedia('(prefers-reduced-motion: reduce)').matches ? 900 : 3200) - (Date.now() - SPLASH_T0)));
+  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 450); }, Math.max(0, (matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 1700) - (Date.now() - (window.SPLASH_GO || SPLASH_T0))));
 }
 (function initSplash() {
   const f = document.getElementById('sp-foot'); if (f) f.innerHTML = `Version ${APP_VERSION}<br>${APP_CREDIT}`;
-  const l = document.getElementById('sp-logo'); if (l) l.innerHTML = LOGO_URL ? `<img src="${LOGO_URL}" alt="${esc(BR.name)}">` : `<div class="wordmark"><span class="wm-1">${esc(BR.short)}</span><span class="wm-2">${esc(BR.tagline)}</span></div>`;
+  const l = document.getElementById('sp-logo'); if (l) l.innerHTML = LOGO_URL ? `<img src="${LOGO_URL}" alt="${esc(BR.name)}" width="900" height="307" decoding="async" fetchpriority="high">` : `<div class="wordmark"><span class="wm-1">${esc(BR.short)}</span><span class="wm-2">${esc(BR.tagline)}</span></div>`;
   const words = (LOGO_URL ? BR.service : `${BR.name} ${BR.service}`).split(/\s+/).filter(Boolean);
   const tt = document.getElementById('sp-name'); if (tt) { tt.setAttribute('aria-label', words.join(' ')); tt.innerHTML = words.map((w, i) => `<span class="sp-w" style="--i:${i}" aria-hidden="true"><span>${esc(w)}</span></span>`).join(' '); }
   document.title = `${BR.short} Booking`;
+  const sp = document.getElementById('splash'), go = () => { if (sp && !sp.classList.contains('go')) { sp.classList.add('go'); window.SPLASH_GO = Date.now(); } };
+  const im = l && l.querySelector('img');
+  if (!im || im.complete) go(); else { im.addEventListener('load', go); im.addEventListener('error', go); setTimeout(go, 1200); }
   setTimeout(hideSplash, 7000);
 })();
 function boot() {
@@ -1147,7 +1206,7 @@ function ask({ title, text = '', ok = 'Confirm', input = null, danger = false })
   });
 }
 function brand(cls = '') {
-  return LOGO_URL ? `<img src="${esc(LOGO_URL)}" class="logo ${cls}" alt="${esc(BR.name)}">`
+  return LOGO_URL ? `<img src="${esc(LOGO_URL)}" class="logo ${cls}" alt="${esc(BR.name)}" width="900" height="307" decoding="async">`
     : `<div class="wordmark ${cls}" aria-label="${esc(BR.name)}"><span class="wm-1">${esc(BR.short)}</span><span class="wm-2">${esc(BR.tagline)}</span></div>`;
 }
 const loading = () => `<div class="empty"><p>Loading…</p></div>`;
@@ -2156,32 +2215,81 @@ function viewDetail(id) {
   const needs = miss.length ? `<section class="card needs-card"><h2>Needs details (${miss.length})</h2>${miss.map(m => `<div class="need-row">☐ ${esc(m)}</div>`).join('')}
     <div class="btnrow">${b.carTba ? `<button class="btn sm primary" data-act="assigncar" data-id="${id}">Assign car</button>` : ''}${miss.includes('Driver') ? `<button class="btn sm" data-act="assign" data-id="${id}">Assign driver</button>` : ''}${miss.some(m => /Agreement|phone|Location/.test(m)) ? `<a class="btn sm" href="#/edit/${id}">Add details</a>` : ''}</div></section>` : '';
   const log = (b.log || []).slice().reverse();
-  const html = `
-  <section class="card"><div class="t-top" style="justify-content:space-between"><h2 style="margin:0">${b.oldRef ? `${agrTitle(b)}<br><span class="bk-side" style="margin-top:4px;display:inline-block">Booking ${esc(b.ref)}</span>` : esc(b.ref)}</h2><span>${f ? (f.rateType === 'month' ? '<span class="chip onrent">Monthly</span> ' : '<span class="chip">Daily</span> ') : ''}${statusChip(b.status, b)}</span></div>
-    ${b.status === 'cancelled' ? `<p class="warn">Cancelled: ${esc(b.cancelReason || '')}</p>` : ''}
-    <dl class="kv" style="margin-top:10px">
-      <dt>Agreement No</dt><dd>${b.oldRef ? `<strong class="num">${esc(b.oldRef)}</strong>` : `<span class="muted">Not entered yet</span>`}</dd>
-      <dt>Client</dt><dd><strong>${staff && b.clientPhone ? `<a href="#/client/${phoneKey(b.clientPhone)}">${esc(b.clientName)}</a>` : esc(b.clientName)}</strong>${staff && b.clientPhone ? '<br><span class="muted small">Tap name for past bookings</span>' : ''}</dd>
-      ${b.clientPhone ? `<dt>Phone</dt><dd><a href="tel:${esc(b.clientPhone)}">${esc(b.clientPhone)}</a></dd>` : ''}
-      <dt>Delivery location</dt><dd>${esc(b.location || '-')}</dd>
-      ${b.pickupLocation ? `<dt>Pickup location</dt><dd>${esc(b.pickupLocation)}</dd>` : ''}
-      <dt>Car</dt><dd><a href="#/car/${esc(b.carId)}" style="color:inherit">${carLabel(b)}</a>${carExtra(b.carId)}${staff ? '<br>' + subTag(b) : ''}</dd>
-      <dt>Delivery</dt><dd class="big">${esc(fmtDT(b.deliveryAt))}</dd>
-      <dt>Pickup</dt><dd class="big">${esc(fmtDT(b.pickupAt))}${b.plannedPickupAt && b.plannedPickupAt !== b.pickupAt ? `<br><span class="muted small" style="font-weight:400">Planned ${esc(fmtDT(b.plannedPickupAt))}${b.pickupAt < b.plannedPickupAt ? ', returned early' : ''}</span>` : ''}</dd>
-      <dt>Days</dt><dd>${esc(b.days)}${b.extendable ? ' <span class="chip ext">Extendable</span>' : ''}</dd>
-      <dt>Salesperson</dt><dd>${esc(b.salespersonName || '-')}</dd>
-      <dt>Drivers</dt><dd>Delivery: ${esc(b.deliveryDriverName || 'not assigned')}<br>Pickup: ${esc(b.pickupDriverName || 'not assigned')}</dd>
-      ${b.collectDocs ? `<dt>Documents</dt><dd>${b.docsCollected ? `<span class="chip done">Collected</span> <span class="muted small">${esc(b.docsCollectedBy || '')}</span>` : '<span class="chip docs">📄 To collect at delivery</span>'}</dd>` : ''}
-      ${b.notes ? `<dt>Notes</dt><dd>${esc(b.notes)}</dd>` : ''}
-    </dl></section>
+  /* ---------- document-style page: logo left, agreement details right ---------- */
+  const mo = f && f.rateType === 'month';
+  const stLine = (() => {
+    if (b.status === 'cancelled') return { k: 'late', t: `Cancelled${b.cancelReason ? ': ' + b.cancelReason : ''}` };
+    if (b.status === 'booked') { const ms = parseDT(b.deliveryAt) - Date.now(); return ms < 0 ? { k: 'late', t: `Delivery overdue by ${durText(-ms)}` } : b.deliveryDate === todayStr() ? { k: 'due', t: `Delivery today, ${time12(tOf(b.deliveryAt))}` } : { k: 'ok', t: `Delivery ${fmtDT(b.deliveryAt)}` }; }
+    const s = agState(b); return { k: s.k, t: s.text };
+  })();
+  const startAt = b.deliveredAt || b.deliveryAt, endAt = b.pickedUpAt || b.pickupAt;
+  const pct = b.status === 'onrent' ? Math.min(100, Math.max(3, Math.round((Date.now() - parseDT(startAt)) / Math.max(1, parseDT(b.pickupAt) - parseDT(startAt)) * 100))) : b.pickedUpAt ? 100 : 0;
+  const dho = b.deliveryHandover || {};
+  const car = S.cars.find(x => x.id === b.carId);
+  const kv = (l, v) => v ? `<dt>${l}</dt><dd>${v}</dd>` : '';
+  let charges = `<div class="card-pad">${loading()}</div>`;
+  if (f) {
+    const e = estimate(b, f), xs = [...(f.extras || []).map((c, i) => ({ c, src: 'x', i })), ...((f.pickupCharges && f.pickupCharges.extras) || []).map((c, i) => ({ c, src: 'p', i })), ...legacyCharges(f.pickupCharges).map(c => ({ c }))];
+    const canRm = role() === 'admin' || role() === 'sales', total = r2(e.gross + chargesGross(f));
+    const pays = [...(+f.advance ? [{ amount: +f.advance, method: f.advanceMethod || 'cash', stage: 'booking', by: '', at: '' }] : []), ...(f.payments || [])];
+    const paid = paidSoFar(f), PM = { cash: 'cash', card: 'card', bank: 'bank transfer' };
+    charges = `<table class="dv-tbl num"><thead><tr><th>Description</th><th class="r">Amount</th><th class="r">VAT ${S.settings.vatRate ?? 5}%</th><th class="r">Total AED</th></tr></thead><tbody>
+      <tr><td>${mo ? `Rent, ${esc(b.days)} days of ${esc(rateText(f))} (estimate)` : `Rent ${esc(b.days)} day${+b.days === 1 ? '' : 's'} × AED ${money(f.rate)}`} <span class="muted small">(${esc(MODE_LABEL[f.vatMode] || '')})</span></td><td class="r">${money(e.net)}</td><td class="r">${money(e.vat)}</td><td class="r">${money(e.gross)}</td></tr>
+      ${xs.map(({ c, src, i }) => { const r = chargeRows(f, [c])[0]; return r ? `<tr><td>${esc(chargeName(c))} <span class="muted small">(${esc(MODE_LABEL[r.mode])}${c.by ? ', ' + esc(c.by) : ''})</span>${canRm && src ? ` <button class="btn sm ch-rm" data-act="rmcharge" data-id="${id}" data-src="${src}" data-i="${i}" aria-label="Remove ${esc(chargeName(c))}">×</button>` : ''}</td><td class="r">${money(r.net)}</td><td class="r">${money(r.vat)}</td><td class="r">${money(r.gross)}</td></tr>` : ''; }).join('')}
+      </tbody><tfoot><tr class="dv-tot"><td colspan="3">Total</td><td class="r">${money(total)}</td></tr>
+      ${pays.map(p => `<tr class="dv-pay"><td colspan="3">Paid ${esc(PM[p.method] || p.method || '')}${p.stage ? `, at ${esc(p.stage)}` : ''}${p.by ? ` <span class="muted small">(${esc(p.by)}${p.at ? ', ' + esc(fmtDT(p.at)) : ''})</span>` : ''}</td><td class="r">− ${money(p.amount)}</td></tr>`).join('')}
+      <tr class="dv-bal"><td colspan="3">${paid ? 'Balance due' : 'Amount due'}</td><td class="r">AED ${money(r2(total - paid))}</td></tr></tfoot></table>
+      ${f.pickupCharges && +f.pickupCharges.extraDays ? `<p class="small muted" style="margin:6px 0 0">Extra days at return: ${+f.pickupCharges.extraDays}</p>` : ''}
+      ${b.status !== 'cancelled' ? `<div style="margin:10px 0 4px"><button class="btn sm" data-act="addcharge" data-id="${id}">+ Add charge</button></div>` : ''}
+      ${f.settlement && f.settlement.totals ? `<h4 class="dv-sub">Final bill</h4><div class="calc">${settlementRowsHtml(f.settlement)}</div>` : ''}`;
+  }
+  const logoHtml = LOGO_URL ? `<img src="${esc(LOGO_URL)}" class="dv-logo" alt="${esc(BR.name)}" width="900" height="307">` : `<div class="wordmark"><span class="wm-1">${esc(BR.short)}</span><span class="wm-2">${esc(BR.tagline)}</span></div>`;
+  const html = `<div class="dv-wrap">
+  <article class="dv">
+    <header class="dv-head">
+      <div class="dv-brand">${logoHtml}</div>
+      <div class="dv-id">
+        <div class="dv-eye">${b.oldRef ? 'Rental agreement' : 'Booking'}</div>
+        <div class="dv-no num">${esc(b.oldRef || b.ref)}</div>
+        <div class="dv-ref">${b.oldRef ? `Booking ${esc(b.ref)}` : 'Agreement no. not entered yet'}${b.createdBy ? ` · by ${esc(b.createdBy)}` : ''}</div>
+        <div class="dv-chips">${f ? (mo ? '<span class="chip onrent">Monthly</span>' : '<span class="chip">Daily</span>') : ''}${statusChip(b.status, b)}${b.extendable ? '<span class="chip ext">Extendable</span>' : ''}</div>
+        <div class="dv-st dvk-${stLine.k}"><span class="ag-dot"></span>${esc(stLine.t)}</div>
+      </div>
+    </header>
+    <div class="dv-band"><span>Client <b>${esc(b.clientName)}</b></span><span>Car <b>${esc(b.carTba ? 'To assign' : b.plate || '')}</b> ${esc(b.carName || '')}</span></div>
+    <div class="dv-grid">
+      <section class="dv-sec"><h3>Client</h3><dl class="dv-kv">
+        <dt>Name</dt><dd class="dv-big">${staff && b.clientPhone ? `<a href="#/client/${phoneKey(b.clientPhone)}">${esc(b.clientName)}</a><div class="muted small" style="font-weight:500">Tap the name for past bookings</div>` : esc(b.clientName)}</dd>
+        ${kv('Phone', b.clientPhone ? `<a href="tel:${esc(b.clientPhone)}">${esc(b.clientPhone)}</a>` : '')}
+        ${kv('Delivery at', esc(b.location || '-'))}
+        ${kv('Pickup at', b.pickupLocation ? esc(b.pickupLocation) : '')}
+        ${b.collectDocs ? kv('Documents', b.docsCollected ? `<span class="chip done">✓ Collected</span> <span class="muted small">${esc(b.docsCollectedBy || '')}</span>` : '<span class="chip docs">📄 To collect at delivery</span>') : ''}
+        ${kv('Notes', b.notes ? esc(b.notes) : '')}
+      </dl></section>
+      <section class="dv-sec"><h3>Vehicle</h3><dl class="dv-kv">
+        <dt>Car</dt><dd class="dv-big"><a href="#/car/${esc(b.carId)}" style="color:inherit">${carLabel(b)}</a></dd>
+        ${kv('Details', car ? esc([car.color, car.category, OWN_LABEL[ownershipOf(car)] + (isSub(car) && car.supplier ? ': ' + car.supplier : '')].filter(Boolean).join(' · ')) : '')}
+        ${kv('Out', dho.km || dho.fuel ? `KM ${esc(dho.km || '-')} · Fuel ${esc(dho.fuel || '-')}` : '')}
+        <dt>Team</dt><dd>Sales: ${esc(b.salespersonName || '-')}<br>Delivery: ${b.deliveryDriverName ? esc(b.deliveryDriverName) : '<span class="dv-miss">not assigned</span>'} · Pickup: ${b.pickupDriverName ? esc(b.pickupDriverName) : '<span class="dv-miss">not assigned</span>'}</dd>
+      </dl></section>
+    </div>
+    <section class="dv-sec"><h3>Rental period</h3>
+      <div class="dv-period"><div><div class="dv-lbl">${b.deliveredAt ? 'Delivered' : 'Delivery'}</div><div class="dv-dt">${esc(dmyLong(startAt))}</div></div>
+        <div class="dv-mid"><b class="num">${esc(b.days)}</b>${+b.days === 1 ? 'day' : 'days'}</div>
+        <div class="dv-r"><div class="dv-lbl">${b.pickedUpAt ? 'Returned' : 'Return due'}</div><div class="dv-dt">${esc(dmyLong(endAt))}</div>${b.plannedPickupAt && b.plannedPickupAt !== b.pickupAt ? `<div class="muted small">Planned ${esc(fmtDT(b.plannedPickupAt))}${b.pickupAt < b.plannedPickupAt ? ', returned early' : ''}</div>` : ''}</div></div>
+      ${pct ? `<div class="dv-bar ${mo ? 'mo' : ''}"><i style="width:${pct}%"></i></div>` : ''}
+    </section>
+    <section class="dv-sec"><h3>Charges</h3>${charges}</section>
+    ${b.deliveryHandover || b.pickupHandover ? `<section class="dv-sec"><h3>Handover</h3><dl class="dv-kv">${ho(b.deliveryHandover, 'At delivery')}${ho(b.pickupHandover, 'At pickup')}</dl></section>` : ''}
+    <footer class="dv-acts">${[...acts].sort((x, y) => actRank(x) - actRank(y)).join('')}</footer>
+  </article>
   ${needs}
-  ${price}
   ${(b.legs || []).length ? `<section class="card"><h2>Cars used in this rental</h2>${[...b.legs, { plate: b.plate, carName: b.carName, from: b.legStart, to: null, current: true }].map(l => `<div class="leg"><span class="plate big">${esc(l.plate)}</span> ${esc(l.carName)}<br><span class="small">${esc(fmtDT(l.from))} to ${l.to ? esc(fmtDT(l.to)) : (b.pickedUpAt ? esc(fmtDT(b.pickedUpAt)) : 'now')}${l.reason ? `, replaced: <strong>${esc(l.reason)}</strong>` : l.current ? ', <strong>current car</strong>' : ''}</span>${l.inHo ? `<br><span class="muted small">Came back KM ${esc(l.inHo.km || '-')}, fuel ${esc(l.inHo.fuel || '-')}${l.inHo.notes ? ', ' + esc(l.inHo.notes) : ''}</span>` : ''}</div>`).join('')}</section>` : ''}
-  ${b.deliveryHandover || b.pickupHandover ? `<section class="card"><h2>Handover</h2><dl class="kv">${ho(b.deliveryHandover, 'At delivery')}${ho(b.pickupHandover, 'At pickup')}</dl></section>` : ''}
-  <div class="btnrow">${acts.join('')}</div>
-  ${log.length || b.status !== 'cancelled' ? `<section class="card"><h2>History</h2>${histSummaryHtml(b)}${log.map(l => `<div class="small" style="padding:6px 0;border-top:1px solid var(--line)"><strong>${esc(fmtDT(l.at))}</strong>, ${esc(l.by)}<br>${esc(l.text)}</div>`).join('')}</section>` : ''}`;
-  return { title: b.oldRef ? `Agreement ${b.oldRef}` : `Booking ${b.ref}`, back: S.listHash || (staff ? '#/bookings' : '#/home'), html };
+  ${log.length || b.status !== 'cancelled' ? `<section class="card"><h2>History</h2>${histSummaryHtml(b)}${log.map(l => `<div class="small" style="padding:6px 0;border-top:1px solid var(--line)"><strong>${esc(fmtDT(l.at))}</strong>, ${esc(l.by)}<br>${esc(l.text)}</div>`).join('')}</section>` : ''}</div>`;
+  return { title: b.oldRef ? `Agreement ${b.oldRef}` : `Booking ${b.ref}`, back: S.listHash || (staff ? '#/bookings' : '#/home'), html, wide: true };
 }
+const actRank = a => /btn good/.test(a) ? 0 : /btn primary/.test(a) ? 1 : /btn danger/.test(a) ? 9 : /btn wa/.test(a) ? 5 : 3;
+const dmyLong = s => { if (!s) return '-'; const d = parseDT(s); return `${d.toLocaleDateString('en-GB', { weekday: 'short' })} ${fmtDT(s)}`; };
 function carExtra(carId) { const c = S.cars.find(x => x.id === carId); return c ? `<br><span class="muted small">${esc([c.color, c.category, OWN_LABEL[ownershipOf(c)] + (isSub(c) && c.supplier ? ': ' + c.supplier : '')].filter(Boolean).join(', '))}</span>` : ''; }
 function settlementRowsHtml(st) {
   const t = st.totals;
