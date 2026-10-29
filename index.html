@@ -5,13 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Booking</title>
 <meta name="theme-color" content="#F6F8FB">
-<link rel="manifest" href="manifest.json">
+<meta name="color-scheme" content="only light">
+<link rel="manifest" href="manifest.json?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Booking">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="app-icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -854,6 +857,7 @@ img.logo,.p-logo,#splash .sp-logo img{aspect-ratio:900/307;object-fit:contain}
   .dv-tbl{font-size:13px}.dv-tbl th,.dv-tbl td{padding:7px 6px}
   .dv-acts .btn{flex:1 1 calc(50% - 8px)}
 }
+:root{color-scheme:only light}
 </style>
 </head>
 <body>
@@ -881,7 +885,7 @@ img.logo,.p-logo,#splash .sp-logo img{aspect-ratio:900/307;object-fit:contain}
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.46-2026';
+const APP_VERSION = '3.48-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -4392,7 +4396,7 @@ ACT.notifon = async () => {
 function phoneNotify(title, body, tag) {
   try {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    const opt = { body, tag, icon: 'icon-192.png', badge: 'icon-192.png', renotify: true };
+    const opt = { body, tag, icon: 'app-icon-192.png', badge: 'app-icon-192.png', renotify: true };
     if (swReg && swReg.showNotification) swReg.showNotification(title, opt); else new Notification(title, opt);
   } catch (e) { }
 }
