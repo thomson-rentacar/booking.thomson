@@ -858,6 +858,7 @@ img.logo,.p-logo,#splash .sp-logo img{aspect-ratio:900/307;object-fit:contain}
   .dv-acts .btn{flex:1 1 calc(50% - 8px)}
 }
 :root{color-scheme:only light}
+.chip.broker{background:#FBF3DF;color:#7A5A12;border:1px solid #EAD9AE}
 </style>
 </head>
 <body>
@@ -885,7 +886,7 @@ img.logo,.p-logo,#splash .sp-logo img{aspect-ratio:900/307;object-fit:contain}
 /* Your Firebase keys and logo live in config.js, so this file can be replaced freely. */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: 'PASTE_API_KEY' }; // set in config.js
 const LOGO_URL = window.LOGO_URL || '';                                          // set in config.js
-const APP_VERSION = '3.48-2026';
+const APP_VERSION = '3.49-2026';
 const APP_CREDIT = 'Designed and developed by Sajid';
 /* branding comes from config.js, so the same app works for any company */
 const BR = Object.assign({ company: 'Thomson Rent A Car LLC', name: 'Thomson Rent A Car', short: 'Thomson', tagline: 'Rent A Car', service: 'Car Rental Booking Service' }, window.BRAND || {});
@@ -1516,7 +1517,7 @@ function viewHome() {
   const dayWord = dayWordFor(D).toLowerCase().startsWith('to') ? dayWordFor(D).toLowerCase() : 'this day';
   const tab = S.homeTab;
   const head = `<section class="hero home">${SKYLINE}<div class="hero-in">
-    <div class="hero-top">${brand()}<div style="flex:1"><div class="welcome">Welcome to ${esc(BR.short)} ${esc(BR.service)}</div></div><span class="bell-m">${bellHtml(true)}</span></div>
+    <div class="hero-top">${brand()}<div style="flex:1"></div><span class="bell-m">${bellHtml(true)}</span></div>
     <div class="hero-date">
       <button class="iconbtn dark" data-act="day" data-d="-1" aria-label="Previous day">${ico('left')}</button>
       <div>
@@ -2030,6 +2031,7 @@ function bookedMsg(b, f, updated) {
     `${dot} Location: ${b.location || '-'}`,
     `${dot} Client: *${String(b.clientName || '').replace(/\*/g, '').trim()}*`,
     phone ? `${dot} Contact: ${phone}` : '',
+    b.broker ? `${dot} Broker: ${b.broker}` : '',
     `${dot} Booked by: ${b.salespersonName || S.me.name}`,
     b.collectDocs ? (em ? `${EMO.doc} Collect documents at delivery` : 'Collect documents at delivery') : '',
     ''];
@@ -2260,11 +2262,12 @@ function viewDetail(id) {
         <div class="dv-st dvk-${stLine.k}"><span class="ag-dot"></span>${esc(stLine.t)}</div>
       </div>
     </header>
-    <div class="dv-band"><span>Client <b>${esc(b.clientName)}</b></span><span>Car <b>${esc(b.carTba ? 'To assign' : b.plate || '')}</b> ${esc(b.carName || '')}</span></div>
+    <div class="dv-band"><span>Client <b>${esc(b.clientName)}</b>${b.broker ? ` · via <b>${esc(b.broker)}</b>` : ''}</span><span>Car <b>${esc(b.carTba ? 'To assign' : b.plate || '')}</b> ${esc(b.carName || '')}</span></div>
     <div class="dv-grid">
       <section class="dv-sec"><h3>Client</h3><dl class="dv-kv">
         <dt>Name</dt><dd class="dv-big">${staff && b.clientPhone ? `<a href="#/client/${phoneKey(b.clientPhone)}">${esc(b.clientName)}</a><div class="muted small" style="font-weight:500">Tap the name for past bookings</div>` : esc(b.clientName)}</dd>
         ${kv('Phone', b.clientPhone ? `<a href="tel:${esc(b.clientPhone)}">${esc(b.clientPhone)}</a>` : '')}
+        ${kv('Broker', b.broker ? `<span class="chip broker">${esc(b.broker)}</span>` : '<span class="muted">Direct client</span>')}
         ${kv('Delivery at', esc(b.location || '-'))}
         ${kv('Pickup at', b.pickupLocation ? esc(b.pickupLocation) : '')}
         ${b.collectDocs ? kv('Documents', b.docsCollected ? `<span class="chip done">✓ Collected</span> <span class="muted small">${esc(b.docsCollectedBy || '')}</span>` : '<span class="chip docs">📄 To collect at delivery</span>') : ''}
@@ -2335,7 +2338,13 @@ const suppliers = () => [...new Set(S.cars.filter(isSub).map(c => c.supplier).fi
 
 
 /* read a WhatsApp booking message into the form */
-const PASTE_TEMPLATE = 'Car name: \nDate: \nTime: \nDays: \nLocation: \nPrice: \nClient: \nContact number: ';
+const PASTE_TEMPLATE = 'Car name: \nDate: \nTime: \nDays: \nLocation: \nPrice: \nClient: \nContact number: \nBroker: ';
+/* broker / agent names already used, so the same spelling is reused */
+function brokerList() {
+  const s = new Map();
+  [...S.active.values(), ...(S.listRows || []), ...((S.clients || []))].forEach(b => { const n = String(b.broker || '').trim(); if (n) s.set(n.toLowerCase(), n); });
+  return [...s.values()].sort((a, c) => a.localeCompare(c));
+}
 function parseBookingMsg(text) {
   const raw = String(text || '').replace(/\r/g, '');
   const lines = raw.split('\n').map(l => l.replace(/^[\s•*\-–]+/, '').trim()).filter(Boolean);
@@ -2370,17 +2379,18 @@ function parseBookingMsg(text) {
   // location, client, phone
   const loc = kv(/^(?:location|from|place|address)\s*[:\-]\s*(.*)$/i); if (loc && !/^\d{1,2}([:.]\d{2})?\s*(am|pm)?$/i.test(loc)) { out.location = loc; out.found.push('location'); }
   let cl = kv(/^(?:client(?:\s*name)?|customer|name)\s*[:\-]\s*(.+)$/i);
-  if (!cl) cl = lines.filter(l => !/\d/.test(l) && !/:\s*$/.test(l) && !/book|confirm|delivery|return|location|rate|price|vehicle|car name|contact|date|days?\b|time|from/i.test(l) && (!best || l !== best.line) && /[a-z]/i.test(l)).pop() || null;
+  if (!cl) cl = lines.filter(l => !/\d/.test(l) && !/:\s*$/.test(l) && !/book|confirm|delivery|return|location|rate|price|vehicle|car name|contact|date|days?\b|time|from|broker|agent/i.test(l) && (!best || l !== best.line) && /[a-z]/i.test(l)).pop() || null;
   if (cl) { out.client = cl.replace(/[✅🚘!]+/g, '').trim(); out.found.push('client'); }
   const pl = kv(/^(?:contact(?:\s*(?:no|number|#))?|phone(?:\s*number)?|mobile|tel|whatsapp)\s*[:\-]\s*(.+)$/i) || (raw.match(/(\+\d[\d\s\-]{7,}\d)/) || [])[1];
   if (pl) { out.phone = pl.replace(/[^\d+\s\-]/g, '').trim(); out.found.push('phone'); }
+  const bro = kv(/^(?:broker|agent|via|reference|ref by)\s*[:\-]\s*(.+)$/i); if (bro) { out.broker = bro.trim(); out.found.push('broker'); }
   return out;
 }
 function fillFromMessage(upd) {
   const p = parseBookingMsg($('#b-paste').value), msg = [];
   if (!p.found.length) { $('#b-fillmsg').innerHTML = '<div class="warn">Nothing recognised. Check the message, or fill the form by hand.</div>'; return; }
   const set = (sel, v) => { const el = $(sel); if (el && v != null && v !== '') { el.value = v; el.classList.remove('missing'); } };
-  set('#b-name', p.client); set('#b-phone', p.phone); set('#b-loc', p.location); set('#b-date', p.from); set('#b-time', p.time); set('#b-days', p.days); set('#b-rate', p.rate);
+  set('#b-name', p.client); set('#b-phone', p.phone); set('#b-broker', p.broker); set('#b-loc', p.location); set('#b-date', p.from); set('#b-time', p.time); set('#b-days', p.days); set('#b-rate', p.rate);
   if (p.vat) { const r = $(`input[name=b-vat][value=${p.vat}]`); if (r) r.checked = true; }
   if (p.rateType) set('#b-rt', p.rateType);
   if (p.ext && $('#b-ext')) $('#b-ext').checked = true;
@@ -2404,6 +2414,7 @@ const clientKey = (name, phone) => { const pk = phoneKey(phone); if (pk && pk.le
 function saveClient(x, ref, isNew) {
   const ck = clientKey(x.name, x.phone); if (!ck) return;
   const d = { name: x.name, phone: x.phone, phoneKey: phoneKey(x.phone), location: x.loc, lastBooking: ref, lastAt: nowLocal() };
+  if (x.broker) d.broker = x.broker;
   if (isNew) d.count = FV.increment(1);
   db.doc('clients/' + ck).set(d, { merge: true }).then(() => { if (S.clients) { const c = S.clients.find(c => c.id === ck); if (c) Object.assign(c, d, { count: (c.count || 0) + (isNew ? 1 : 0) }); else S.clients.push({ id: ck, ...d, count: 1 }); } }).catch(() => { });
 }
@@ -2447,7 +2458,7 @@ function viewForm(id) {
   const sps = S.sales.filter(s => s.active !== false || (b && s.id === b.salespersonId));
   const mySp = S.sales.find(s => s.uid === S.me.id);
   const v = {
-    agr: b ? b.oldRef || '' : '', clientName: b ? b.clientName : '', clientPhone: b ? b.clientPhone || '' : '', location: b ? b.location || '' : '', pickupLocation: b ? b.pickupLocation || '' : '',
+    agr: b ? b.oldRef || '' : '', clientName: b ? b.clientName : '', broker: b ? b.broker || '' : '', clientPhone: b ? b.clientPhone || '' : '', location: b ? b.location || '' : '', pickupLocation: b ? b.pickupLocation || '' : '',
     carId: b ? (b.carTba ? '__tba' : b.carId) : pre, tbaModel: b && b.carTba ? b.carName : '', date: b ? b.deliveryDate : todayStr(), time: b ? tOf(b.deliveryAt) : '10:00', days: b ? b.days : 1,
     rate: f ? f.rate : '', rateType: f ? f.rateType || 'day' : 'day', vatMode: f ? f.vatMode : (S.settings.defaultVatMode || 'plus'), sp: b ? b.salespersonId : (mySp ? mySp.id : ''),
     drv: b ? b.deliveryDriverId || '' : '', ext: b ? !!b.extendable : false, docs: b ? !!b.collectDocs : false, advance: f ? f.advance || '' : '', advMethod: f ? f.advanceMethod || 'cash' : 'cash', extras: f ? f.extras || [] : [], notes: b ? b.notes || '' : ''
@@ -2465,6 +2476,7 @@ function viewForm(id) {
     <label class="f">Phone<input id="b-phone" type="tel" value="${esc(v.clientPhone)}" placeholder="050 123 4567"></label>
     <label class="f">Delivery location<input id="b-loc" value="${esc(v.location)}" placeholder="Business Bay, Bay Square 3"></label>
     <label class="f">Pickup location, if different<input id="b-ploc" value="${esc(v.pickupLocation)}" placeholder="Same as delivery"></label>
+    <label class="f">Broker / Agent (optional)<input id="b-broker" list="b-brokers" autocomplete="off" value="${esc(v.broker)}" placeholder="Leave blank for a direct client"></label><datalist id="b-brokers">${brokerList().map(n => `<option value="${esc(n)}">`).join('')}</datalist>
   </section>
   <section class="card"><h2>Car and dates</h2>
     <label class="f">Type plate to find the car<input id="b-pq" autocomplete="off" autocapitalize="characters" placeholder="9185"></label>
@@ -2504,7 +2516,7 @@ function viewForm(id) {
   <div class="btnrow"><a class="btn" href="${id ? '#/booking/' + id : '#/home'}">Go back</a><button class="btn primary" id="b-save">${id ? 'Save changes' : 'Create booking'}</button></div>`;
   const mount = () => {
     const val = () => ({
-      agr: $('#b-agr').value.trim(), name: $('#b-name').value.trim(), phone: $('#b-phone').value.trim(), loc: $('#b-loc').value.trim(), ploc: $('#b-ploc').value.trim(),
+      agr: $('#b-agr').value.trim(), name: $('#b-name').value.trim(), broker: ((($('#b-broker') || {}).value) || '').trim().replace(/\s+/g, ' '), phone: $('#b-phone').value.trim(), loc: $('#b-loc').value.trim(), ploc: $('#b-ploc').value.trim(),
       carId: $('#b-car').value, hire: { supplier: ($('#h-sup') || {}).value?.trim() || '', make: $('#h-make').value.trim(), model: $('#h-model').value.trim(), year: $('#h-year').value.trim(), color: $('#h-color').value.trim(), plate: $('#h-plate').value.trim().toUpperCase() }, date: $('#b-date').value, time: $('#b-time').value, days: parseInt($('#b-days').value, 10) || 0,
       rate: parseFloat($('#b-rate').value) || 0, rt: $('#b-rt').value, vat: ($('input[name=b-vat]:checked') || {}).value || 'plus',
       adv: parseFloat($('#b-adv').value) || 0, advm: $('#b-advm').value, sp: $('#b-sp').value, drv: $('#b-drv').value, docs: $('#b-docs').checked, ext: $('#b-ext').checked, notes: $('#b-notes').value.trim(), extras: readCharges(document, 'b', 'booking')
@@ -2539,12 +2551,13 @@ function viewForm(id) {
       loadClients().then(() => { if (fi.value) fi.dispatchEvent(new Event('input')); }).catch(() => { });
       fi.addEventListener('input', () => {
         const list = findClients(fi.value), box = $('#b-found');
-        box.innerHTML = !fi.value.trim() ? '' : S.clientsBlocked ? '<p class="small muted">Client search isn\'t available yet. The admin needs to publish the latest database rules.</p>' : !S.clients ? '<p class="small muted">Loading clients…</p>' : list.length ? list.map((c, i) => `<button type="button" class="found-row" data-i="${i}"><strong>${esc(c.name)}</strong><span>${esc(c.phone || 'no phone')}${c.location ? ' · ' + esc(c.location) : ''}${c.count ? ` · ${c.count} booking${c.count === 1 ? '' : 's'}` : ''}</span></button>`).join('') : '<p class="small muted">No previous client matches. Fill in the details below.</p>';
+        box.innerHTML = !fi.value.trim() ? '' : S.clientsBlocked ? '<p class="small muted">Client search isn\'t available yet. The admin needs to publish the latest database rules.</p>' : !S.clients ? '<p class="small muted">Loading clients…</p>' : list.length ? list.map((c, i) => `<button type="button" class="found-row" data-i="${i}"><strong>${esc(c.name)}</strong><span>${esc(c.phone || 'no phone')}${c.location ? ' · ' + esc(c.location) : ''}${c.broker ? ' · via ' + esc(c.broker) : ''}${c.count ? ` · ${c.count} booking${c.count === 1 ? '' : 's'}` : ''}</span></button>`).join('') : '<p class="small muted">No previous client matches. Fill in the details below.</p>';
         box.querySelectorAll('.found-row').forEach(bt => bt.onclick = () => {
           const c = list[+bt.dataset.i];
+          if (c.broker && $('#b-broker') && !$('#b-broker').value) $('#b-broker').value = c.broker;
           $('#b-name').value = c.name || ''; $('#b-phone').value = c.phone || ''; if (c.location && !$('#b-loc').value) $('#b-loc').value = c.location;
           ['#b-name', '#b-phone', '#b-loc'].forEach(s => $(s).classList.remove('missing'));
-          box.innerHTML = `<p class="found-ok">Returning client: <strong>${esc(c.name)}</strong>${c.count ? `, ${c.count} past booking${c.count === 1 ? '' : 's'}` : ''}${c.phoneKey ? ` · <a href="#/client/${esc(c.phoneKey)}">history</a>` : ''}</p>`;
+          box.innerHTML = `<p class="found-ok">Returning client: <strong>${esc(c.name)}</strong>${c.broker ? ` (broker <strong>${esc(c.broker)}</strong> filled in; clear it if direct this time)` : ''}${c.count ? `, ${c.count} past booking${c.count === 1 ? '' : 's'}` : ''}${c.phoneKey ? ` · <a href="#/client/${esc(c.phoneKey)}">history</a>` : ''}</p>`;
           fi.value = ''; upd();
         });
       });
@@ -2600,7 +2613,7 @@ function viewForm(id) {
         carIds: [...new Set([...((b && b.legs) || []).map(l => l.carId), car.id].filter(Boolean))],
         deliveryAt: `${x.date}T${x.time}`, deliveryDate: x.date, pickupAt: pu, pickupDate: pu.slice(0, 10), days: x.days,
         salespersonId: x.sp, salespersonName: sp.name || (b && !x.sp && b.salespersonName ? b.salespersonName : S.me.name), salespersonUid: sp.uid || (b && !x.sp ? b.salespersonUid || '' : (x.sp ? '' : S.me.id)), deliveryDriverId: x.drv, deliveryDriverName: dr.name || '',
-        notes: x.notes, collectDocs: x.docs, extendable: x.ext, updatedAt: FV.serverTimestamp(), updatedBy: S.me.name
+        notes: x.notes, broker: x.broker, collectDocs: x.docs, extendable: x.ext, updatedAt: FV.serverTimestamp(), updatedBy: S.me.name
       };
       const fin = { rate: x.rate, rateType: x.rt, vatMode: x.vat, advance: x.adv, advanceMethod: x.advm, extras: x.extras };
       try {
@@ -2756,10 +2769,11 @@ function filteredRows() {
   const ks = KIND_ST[S.listKind || 'bookings'];
   const stOk = b => F.status === 'all' ? true : F.status === 'open' ? (S.listKind === 'agreements' ? b.status === 'onrent' : b.status === 'booked') : F.status === 'done' ? ['returned', 'pending', 'closed'].includes(b.status) : b.status === F.status;
   return (S.listRows || []).filter(b => ks.includes(b.status) && stOk(b)
+    && (!F.broker || F.broker === 'all' || (F.broker === 'none' ? !b.broker : String(b.broker || '').toLowerCase() === F.broker.toLowerCase()))
     && (F.sp === 'all' || b.salespersonId === F.sp) && (F.car === 'all' || b.carId === F.car)
     && (F.type === 'all' || (F.type === 'sub' ? b.carType === 'sublease' : F.type === 'investor' ? (S.cars.find(c => c.id === b.carId) || {}).ownership === 'investor' : F.type === 'owned' ? b.carType !== 'sublease' && (S.cars.find(c => c.id === b.carId) || {}).ownership !== 'investor' : b.carType !== 'sublease'))
     && (!F.rtype || F.rtype === 'all' || rtypeOf(b) === F.rtype)
-    && (!q || (plateSig(q).d.length >= 3 && plateSig(b.plate).d.includes(plateSig(q).d)) || [b.ref, b.oldRef, b.clientName, b.clientPhone, b.plate, b.carName, b.location, b.supplier].join(' ').toLowerCase().includes(q)))
+    && (!q || (plateSig(q).d.length >= 3 && plateSig(b.plate).d.includes(plateSig(q).d)) || [b.ref, b.oldRef, b.clientName, b.clientPhone, b.plate, b.carName, b.location, b.supplier, b.broker].join(' ').toLowerCase().includes(q)))
     .sort((a, c) => S.listKind === 'agreements' ? String(c.deliveredAt || c.deliveryAt).localeCompare(String(a.deliveredAt || a.deliveryAt)) : 0);
 }
 function rangeFor(r) {
@@ -2772,7 +2786,7 @@ function rangeFor(r) {
 }
 const listRowHtml = b => { const f = S.listFin.get(b.id); return `<a class="list-row" href="#/booking/${b.id}">
       <div class="lr-top"><strong class="lr-title">${agrTitle(b)}</strong><span>${bkSide(b)} ${rtChip(b)} ${statusChip(b.status, b)}</span></div>
-      <div class="lr-sub">${carLabel(b)} ${subTag(b)}</div>
+      <div class="lr-sub">${carLabel(b)} ${subTag(b)} ${b.broker ? `<span class="chip broker">Broker: ${esc(b.broker)}</span>` : ''}</div>
       <div class="lr-when num">${esc(fmtDT(b.deliveryAt))} to ${esc(fmtDT(b.pickupAt))}</div>
       <div class="lr-top lr-sub"><span>${b.days} days, ${esc(b.salespersonName || '-')}</span><strong class="num" style="color:var(--ink)">AED ${money(bookingTotal(b, f))}</strong></div></a>`; };
 const KIND_ST = { bookings: ['booked', 'cancelled'], agreements: ['onrent', 'returned', 'pending', 'closed'] };
@@ -2807,7 +2821,7 @@ function agCard(b) {
   return `<a class="ag-card ${mo ? 'mo' : 'dy'} st-${st.k}" href="#/booking/${b.id}">
     ${st.k === 'done' ? `<span class="stamp ag-stamp"><b>RETURNED ✓</b><i>${esc(agShort(b.pickedUpAt || b.pickupAt))}</i></span>` : ''}
     <div class="ag-top"><strong class="ag-title">${agrTitle(b)}</strong><strong class="ag-amt num">AED ${money(bookingTotal(b, f))}</strong></div>
-    <div class="ag-car">${carLabel(b)} ${subTag(b)}<span class="ag-ref">${esc(b.ref)}</span></div>
+    <div class="ag-car">${carLabel(b)} ${subTag(b)}${b.broker ? `<span class="chip broker">Broker: ${esc(b.broker)}</span>` : ''}<span class="ag-ref">${esc(b.ref)}</span></div>
     <div class="ag-dates num">${esc(agShort(agStart(b)))} → ${esc(fmtDT(b.status === 'onrent' ? b.pickupAt : (b.pickedUpAt || b.pickupAt)))}</div>
     <div class="ag-prog"><span class="ag-bar"><i style="width:${pct}%"></i></span><span class="num">${st.k === 'done' ? `${total} day${total === 1 ? '' : 's'}` : `Day ${Math.min(day, total)} of ${total}`}</span></div>
     <div class="ag-foot"><span><span class="ag-dot"></span>${esc(st.text)}</span><span class="muted">${b.extendable ? 'Extendable · ' : ''}${esc(b.salespersonName || '')}</span></div>
@@ -2857,10 +2871,11 @@ function viewBookings(kind) {
     <div class="seg left wrap" role="group" aria-label="Period">${[['open', AG ? 'Open now' : 'To deliver'], ['month', 'This month'], ['last', 'Last month'], ['next', 'Next 30 days'], ['year', 'This year'], ['all', 'All time']].map(([k, l]) => `<button class="${F.range === k ? 'on' : ''}" data-act="range" data-r="${k}">${l}</button>`).join('')}</div>
     <label class="f">Search<input id="f-q" type="search" value="${esc(F.q)}" placeholder="${AG ? 'Agreement or booking number' : 'Booking number'}, client, phone, plate"></label>
     <label class="f">Status<select id="f-st">${(AG ? [['open', 'Open agreements'], ['done', 'Returned'], ['all', 'All agreements']] : [['open', 'Booked, to deliver'], ['cancelled', 'Cancelled'], ['all', 'All bookings']]).map(([k, l]) => `<option value="${k}" ${F.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-    <details class="more-f" ${S.moreFilters ? 'open' : ''}><summary>More filters: dates, salesperson, car, ownership, daily or monthly</summary>
+    <details class="more-f" ${S.moreFilters ? 'open' : ''}><summary>More filters: dates, salesperson, broker, car, ownership, daily or monthly</summary>
     <div class="grid2"><label class="f">From<input type="date" id="f-from" value="${F.from}"></label><label class="f">To<input type="date" id="f-to" value="${F.to}"></label></div>
     <div class="grid2">
-    <label class="f">Salesperson<select id="f-sp"><option value="all">All</option>${S.sales.map(s => `<option value="${s.id}" ${F.sp === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label></div>
+    <label class="f">Salesperson<select id="f-sp"><option value="all">All</option>${S.sales.map(s => `<option value="${s.id}" ${F.sp === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+    <label class="f">Broker / Agent<select id="f-broker"><option value="all">All</option><option value="none" ${F.broker === 'none' ? 'selected' : ''}>Direct clients (no broker)</option>${brokerList().map(n => `<option value="${esc(n)}" ${F.broker === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label></div>
     <div class="grid2"><label class="f">Car<select id="f-car"><option value="all">All</option>${[...S.cars].sort((a, b) => String(a.plate).localeCompare(String(b.plate), undefined, { numeric: true })).map(c => `<option value="${c.id}" ${F.car === c.id ? 'selected' : ''}>${esc(c.plate)}, ${esc(carTitle(c))}</option>`).join('')}</select></label>
     <label class="f">Ownership<select id="f-type">${[['all', 'All'], ['owned', 'Owned'], ['investor', 'Investor'], ['sub', 'External (sub-lease)']].map(([k, l]) => `<option value="${k}" ${F.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
     <div class="f" style="margin-top:12px;color:var(--muted);font-size:14px">Rental type</div>
@@ -2872,10 +2887,10 @@ function viewBookings(kind) {
   ${hits.length ? `<h2 class="cat-h">Found by number</h2>${hits.map(h => listRowHtml(h) + (kindOf(h) !== kind ? `<p class="small muted" style="margin:-4px 0 8px 4px">This one is in ${kindOf(h) === 'agreements' ? 'Agreements' : 'Bookings'}.</p>` : '')).join('')}` : ''}
   ${AG ? agPart : bkPart}`;
   const mount = () => {
-    const read = () => Object.assign(S.filter, { from: $('#f-from').value, to: $('#f-to').value, status: $('#f-st').value, sp: $('#f-sp').value, car: $('#f-car').value, type: $('#f-type').value, q: $('#f-q').value });
+    const read = () => Object.assign(S.filter, { from: $('#f-from').value, to: $('#f-to').value, status: $('#f-st').value, sp: $('#f-sp').value, broker: ($('#f-broker') || {}).value || 'all', car: $('#f-car').value, type: $('#f-type').value, q: $('#f-q').value });
     const mf = $('.more-f'); if (mf) mf.addEventListener('toggle', () => { S.moreFilters = mf.open; });
     ['#f-from', '#f-to'].forEach(s => $(s).addEventListener('change', () => { read(); S.filter.range = ''; S.listRows = null; render(); }));
-    ['#f-st', '#f-sp', '#f-car', '#f-type'].forEach(s => $(s).addEventListener('change', () => { read(); render(); }));
+    ['#f-st', '#f-sp', '#f-car', '#f-type', '#f-broker'].forEach(s => $(s).addEventListener('change', () => { read(); render(); }));
     let t; $('#f-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(async () => { read(); try { await findByRef(S.filter.q); } catch (e) { S.refHits = null; } render(); const q = $('#f-q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 450); });
   };
   return { title: AG ? 'Agreements' : 'Bookings', html, mount, form: true, wide: AG };
@@ -2885,9 +2900,9 @@ ACT.rtype = ({ r }) => { S.filter.rtype = r; render(); };
 ACT.range = ({ r }) => { const [from, to] = rangeFor(r === 'open' ? 'all' : r); Object.assign(S.filter, { from, to, range: r, status: r === 'open' ? 'open' : (S.filter.range === 'open' ? 'all' : S.filter.status) }); S.listRows = null; render(); };
 ACT['list-csv'] = () => {
   const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const head = ['Booking', 'Agreement No', 'Rental type', 'Status', 'Delivery', 'Return', 'Days', 'Car', 'Plate', 'Car type', 'Supplier', 'Client', 'Phone', 'Location', 'Salesperson', 'Rate', 'VAT mode', 'Total AED', 'Balance AED', 'Payment'];
+  const head = ['Booking', 'Agreement No', 'Rental type', 'Status', 'Delivery', 'Return', 'Days', 'Car', 'Plate', 'Car type', 'Supplier', 'Client', 'Phone', 'Broker / Agent', 'Location', 'Salesperson', 'Rate', 'VAT mode', 'Total AED', 'Balance AED', 'Payment'];
   const lines = filteredRows().map(b => { const f = S.listFin.get(b.id) || {}; const st = f.settlement || {};
-    return [b.ref, b.oldRef || '', rtypeOf(b) === 'month' ? 'Monthly' : 'Daily', STATUS[b.status] || b.status, fmtDT(b.deliveryAt), fmtDT(b.pickupAt), b.days, b.carName, b.plate, b.carType === 'sublease' ? 'Sub-lease' : 'Own', b.supplier || '', b.clientName, b.clientPhone || '', b.location || '',
+    return [b.ref, b.oldRef || '', rtypeOf(b) === 'month' ? 'Monthly' : 'Daily', STATUS[b.status] || b.status, fmtDT(b.deliveryAt), fmtDT(b.pickupAt), b.days, b.carName, b.plate, b.carType === 'sublease' ? 'Sub-lease' : 'Own', b.supplier || '', b.clientName, b.clientPhone || '', b.broker || '', b.location || '',
       b.salespersonName || '', f.rate != null ? `${f.rate}/${f.rateType === 'month' ? 'month' : 'day'}` : '', MODE_LABEL[f.vatMode] || '', b.status === 'cancelled' ? 0 : r2(bookingTotal(b, f)), st.totals ? st.totals.balance : '', st.method || ''].map(cell).join(','); });
   const blob = new Blob(['\ufeff' + [head.join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bookings-${S.filter.from}-to-${S.filter.to}.csv`;
@@ -3615,7 +3630,7 @@ ACT.daysheet = async () => {
     if (e) { if (t.type === 'delivery') totD += tg; else totP += tg; }
     const loc = t.type === 'pickup' ? (b.pickupLocation || b.location) : b.location;
     return `<tr><td>${i + 1}</td><td><strong>${time12(tOf(t.at))}</strong></td><td class="${t.type === 'delivery' ? 'p-type-d' : 'p-type-p'}">${t.type === 'delivery' ? 'Delivery' : 'Pickup'}${t.done ? ' (done)' : ''}${t.type === 'delivery' && b.collectDocs && !b.docsCollected ? '<br><span style="color:#7A4500">+ collect documents</span>' : ''}${b.notes ? `<br><span style="color:#444;font-weight:400">Note: ${esc(b.notes.slice(0, 80))}</span>` : ''}</td>
-      <td>${esc(b.oldRef || '')}</td><td><strong style="font-size:12.5px">${esc(b.carTba ? 'TO ASSIGN' : b.plate)}</strong></td><td>${esc(b.carName)}${b.carType === 'sublease' ? `<br><em style="color:#7A4500">Sub-lease: ${esc(b.supplier || '')}</em>` : ''}</td><td>${esc(b.clientName)}</td><td>${esc(b.clientPhone || '')}</td><td>${esc(loc || '')}</td><td class="r">${b.days}${b.extendable ? '+' : ''}</td>
+      <td>${esc(b.oldRef || '')}</td><td><strong style="font-size:12.5px">${esc(b.carTba ? 'TO ASSIGN' : b.plate)}</strong></td><td>${esc(b.carName)}${b.carType === 'sublease' ? `<br><em style="color:#7A4500">Sub-lease: ${esc(b.supplier || '')}</em>` : ''}</td><td>${esc(b.clientName)}${b.broker ? `<br><em style="color:#7A5A12">via ${esc(b.broker)}</em>` : ''}</td><td>${esc(b.clientPhone || '')}</td><td>${esc(loc || '')}</td><td class="r">${b.days}${b.extendable ? '+' : ''}</td>
       ${staff ? `<td class="r">${f ? money(f.rate) + (f.rateType === 'month' ? '/mo' : '') : ''}</td><td class="r">${e ? money(tg) : ''}</td>` : ''}<td>${esc((t.type === 'delivery' ? b.deliveryDriverName : b.pickupDriverName) || '')}</td><td class="p-rem">${t.done ? (ho => `<span class="p-rem-done">✓ Done ${esc(time12(tOf((t.type === 'delivery' ? b.deliveredAt : b.pickedUpAt) || t.at)))}${ho.by ? `, ${esc(ho.by)}` : ''}</span>`)((t.type === 'delivery' ? b.deliveryHandover : b.pickupHandover) || {}) : ''}</td></tr>`;
   }).join('');
   const nd = tasks.filter(t => t.type === 'delivery').length;
@@ -3666,7 +3681,7 @@ ACT['list-print'] = () => {
   const rows = filteredRows(), F = S.filter;
   let total = 0;
   const body = rows.map((b, i) => { const v = b.status === 'cancelled' ? 0 : bookingTotal(b, S.listFin.get(b.id)); total += v;
-    return `<tr><td>${i + 1}</td>${S.listKind === 'agreements' ? `<td><strong>${esc(b.oldRef || '-')}</strong></td><td>${esc(b.ref)}</td>` : `<td>${esc(b.ref)}</td><td>${esc(b.oldRef || '')}</td>`}<td>${rtypeOf(b) === 'month' ? 'Monthly' : 'Daily'}</td><td><strong>${esc(fmtDT(b.deliveryAt))}</strong></td><td>${esc(fmtDT(b.pickupAt))}</td><td><strong>${esc(b.plate)}</strong></td><td>${esc(b.carName)}${b.carType === 'sublease' ? ' (sub-lease)' : ''}</td><td>${esc(b.clientName)}</td><td class="r">${b.days}</td><td>${esc(b.salespersonName || '')}</td><td>${esc(STATUS[b.status] || b.status)}</td><td class="r">${money(v)}</td></tr>`; }).join('');
+    return `<tr><td>${i + 1}</td>${S.listKind === 'agreements' ? `<td><strong>${esc(b.oldRef || '-')}</strong></td><td>${esc(b.ref)}</td>` : `<td>${esc(b.ref)}</td><td>${esc(b.oldRef || '')}</td>`}<td>${rtypeOf(b) === 'month' ? 'Monthly' : 'Daily'}</td><td><strong>${esc(fmtDT(b.deliveryAt))}</strong></td><td>${esc(fmtDT(b.pickupAt))}</td><td><strong>${esc(b.plate)}</strong></td><td>${esc(b.carName)}${b.carType === 'sublease' ? ' (sub-lease)' : ''}</td><td>${esc(b.clientName)}${b.broker ? `<br><em style="color:#7A5A12">via ${esc(b.broker)}</em>` : ''}</td><td class="r">${b.days}</td><td>${esc(b.salespersonName || '')}</td><td>${esc(STATUS[b.status] || b.status)}</td><td class="r">${money(v)}</td></tr>`; }).join('');
   doPrint(`${printHeader(`${F.rtype === 'month' ? 'Monthly ' : F.rtype === 'day' ? 'Daily ' : ''}${S.listKind === 'agreements' ? 'agreements' : 'bookings'}`.replace(/^./, c => c.toUpperCase()), F.range === 'open' ? `${S.listKind === 'agreements' ? 'Open agreements' : 'To deliver'} on ${fmtDate(todayStr())}` : F.range === 'all' ? 'All dates' : `${fmtDate(F.from)} to ${fmtDate(F.to)}`)}
     <table class="p-tbl"><thead><tr><th>#</th>${S.listKind === 'agreements' ? '<th>Agr No</th><th>Ref</th>' : '<th>Ref</th><th>Agr No</th>'}<th>Type</th><th>Delivery</th><th>Return</th><th>Plate</th><th>Car</th><th>Client</th><th class="r">Days</th><th>Sales</th><th>Status</th><th class="r">Total AED</th></tr></thead>
     <tbody>${body || '<tr><td colspan="13">No bookings.</td></tr>'}</tbody><tfoot><tr><td colspan="12">${rows.length} bookings (cancelled excluded from total)</td><td class="r">${money(total)}</td></tr></tfoot></table>${printFoot()}`, true, `${S.listKind === 'agreements' ? 'Agreements' : 'Bookings'}-${F.range === 'open' ? 'open-' + todayStr() : F.from + '-to-' + F.to}`);
